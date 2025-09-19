@@ -1,0 +1,18 @@
+{
+  "name": "global-machine-monitor",
+  "version": "1.0.0",
+  "description": "Global machine monitoring dashboard with world map",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && py -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "client": "cd frontend && npm start",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "keywords": ["machine-monitoring", "world-map", "real-time", "dashboard"],
+  "author": "Your Company",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

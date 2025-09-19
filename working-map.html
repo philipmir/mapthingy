@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Machine Monitor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: #ffffff;
+            padding: 1rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .title {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            margin: 0.5rem 0 0 0;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        #map {
+            height: calc(100vh - 120px);
+            width: 100%;
+        }
+        
+        .status-panel {
+            position: absolute;
+            top: 140px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #2c3e50;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            min-width: 220px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .online { background-color: #10b981; }
+        .warning { background-color: #f59e0b; }
+        .offline { background-color: #ef4444; }
+        .error { background-color: #8b5cf6; }
+        
+        .machine-popup {
+            min-width: 250px;
+        }
+        
+        .machine-name {
+            margin: 0 0 0.5rem 0;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .machine-details {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .data-item {
+            background: #f8f9fa;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">Global Machine Monitor</h1>
+        <p class="subtitle">Real-time machine status worldwide</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="status-panel">
+        <h4 style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">Machine Status</h4>
+        <div style="margin-bottom: 1rem; font-size: 0.9rem; color: #6c757d;">
+            Status: <span id="connection-status">Loading...</span>
+        </div>
+        
+        <div class="status-item">
+            <div class="status-indicator online"></div>
+            Online: <span id="online-count">0</span>
+        </div>
+        <div class="status-item">
+            <div class="status-indicator warning"></div>
+            Warning: <span id="warning-count">0</span>
+        </div>
+        <div class="status-item">
+            <div class="status-indicator offline"></div>
+            Offline: <span id="offline-count">0</span>
+        </div>
+        <div class="status-item">
+            <div class="status-indicator error"></div>
+            Error: <span id="error-count">0</span>
+        </div>
+        
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem;">
+                <strong>Connections:</strong>
+            </div>
+            <div style="font-size: 0.75rem; color: #9ca3af;">
+                Lines connect to Stockholm headquarters
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Machine data
+        const machines = [
+            {
+                id: "machine_001",
+                name: "Production Line A - Stockholm",
+                lat: 59.3293,
+                lng: 18.0686,
+                status: "online",
+                location: "Stockholm, Sweden",
+                data: { temperature: 45.2, pressure: 2.3, speed: 1500 }
+            },
+            {
+                id: "machine_002", 
+                name: "Packaging Unit B - Gothenburg",
+                lat: 57.7089,
+                lng: 11.9746,
+                status: "online",
+                location: "Gothenburg, Sweden",
+                data: { temperature: 38.7, pressure: 1.8, speed: 1200 }
+            },
+            {
+                id: "machine_003",
+                name: "Quality Control C - Malmö",
+                lat: 55.6050,
+                lng: 13.0038,
+                status: "warning",
+                location: "Malmö, Sweden",
+                data: { temperature: 52.1, pressure: 2.8, speed: 800 }
+            },
+            {
+                id: "machine_004",
+                name: "Assembly Line D - Berlin",
+                lat: 52.5200,
+                lng: 13.4050,
+                status: "online",
+                location: "Berlin, Germany",
+                data: { temperature: 41.5, pressure: 2.1, speed: 1400 }
+            },
+            {
+                id: "machine_005",
+                name: "Testing Station E - London",
+                lat: 51.5074,
+                lng: -0.1278,
+                status: "offline",
+                location: "London, UK",
+                data: { temperature: 0, pressure: 0, speed: 0 }
+            },
+            {
+                id: "machine_006",
+                name: "Manufacturing F - Tokyo",
+                lat: 35.6762,
+                lng: 139.6503,
+                status: "online",
+                location: "Tokyo, Japan",
+                data: { temperature: 42.3, pressure: 2.0, speed: 1650 }
+            },
+            {
+                id: "machine_007",
+                name: "Processing G - New York",
+                lat: 40.7128,
+                lng: -74.0060,
+                status: "online",
+                location: "New York, USA",
+                data: { temperature: 39.8, pressure: 1.9, speed: 1380 }
+            },
+            {
+                id: "machine_008",
+                name: "Assembly H - Sydney",
+                lat: -33.8688,
+                lng: 151.2093,
+                status: "warning",
+                location: "Sydney, Australia",
+                data: { temperature: 48.5, pressure: 2.6, speed: 950 }
+            }
+        ];
+
+        // Initialize map
+        console.log('Initializing map...');
+        const map = L.map('map').setView([20, 0], 2);
+        
+        // Add OpenStreetMap tiles (most reliable)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        console.log('Map tiles added');
+
+        // Create custom icons
+        function createCustomIcon(status) {
+            let color;
+            switch (status) {
+                case 'online': color = '#10b981'; break;
+                case 'warning': color = '#f59e0b'; break;
+                case 'offline': color = '#ef4444'; break;
+                case 'error': color = '#8b5cf6'; break;
+                default: color = '#6b7280';
+            }
+
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background-color: ${color};
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    border: 4px solid white;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: white;
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                "></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        // Create connection lines
+        function createConnectionLines() {
+            const connections = [];
+            const stockholm = machines.find(m => m.id === "machine_001");
+            
+            machines.forEach(machine => {
+                if (machine.id !== stockholm.id) {
+                    let lineColor = '#94a3b8';
+                    let lineWeight = 2;
+                    let lineOpacity = 0.6;
+                    
+                    if (machine.status === 'online') {
+                        lineColor = '#10b981';
+                        lineWeight = 3;
+                        lineOpacity = 0.8;
+                    } else if (machine.status === 'warning') {
+                        lineColor = '#f59e0b';
+                        lineWeight = 2.5;
+                        lineOpacity = 0.7;
+                    } else if (machine.status === 'offline') {
+                        lineColor = '#ef4444';
+                        lineWeight = 2;
+                        lineOpacity = 0.5;
+                    }
+                    
+                    const line = L.polyline(
+                        [[stockholm.lat, stockholm.lng], [machine.lat, machine.lng]], 
+                        {
+                            color: lineColor,
+                            weight: lineWeight,
+                            opacity: lineOpacity,
+                            dashArray: '8, 12'
+                        }
+                    ).addTo(map);
+                    connections.push(line);
+                }
+            });
+            
+            return connections;
+        }
+
+        // Add connection lines first
+        const connectionLines = createConnectionLines();
+        console.log('Connection lines added');
+
+        // Add machine markers
+        const markers = [];
+        machines.forEach(machine => {
+            let icon;
+            if (machine.id === "machine_001") {
+                // Headquarters marker
+                icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="
+                        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        border: 4px solid white;
+                        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: white;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                    ">🏢</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+            } else {
+                icon = createCustomIcon(machine.status);
+            }
+            
+            const marker = L.marker([machine.lat, machine.lng], { icon }).addTo(map);
+
+            const popupContent = `
+                <div class="machine-popup">
+                    <h3 class="machine-name">${machine.name}${machine.id === "machine_001" ? " (HQ)" : ""}</h3>
+                    <div class="machine-details">
+                        <span class="detail-label">Status:</span> <span style="color: ${machine.status === 'online' ? '#10b981' : machine.status === 'warning' ? '#f59e0b' : machine.status === 'offline' ? '#ef4444' : '#8b5cf6'}">${machine.status.toUpperCase()}</span>
+                    </div>
+                    <div class="machine-details">
+                        <span class="detail-label">Location:</span> ${machine.location}
+                    </div>
+                    <div class="machine-details">
+                        <span class="detail-label">Last Update:</span> ${new Date().toLocaleString()}
+                    </div>
+                    
+                    <div class="data-grid">
+                        <div class="data-item">🌡️ ${machine.data.temperature}°C</div>
+                        <div class="data-item">🔧 ${machine.data.pressure} bar</div>
+                        <div class="data-item">⚡ ${machine.data.speed} rpm</div>
+                    </div>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent);
+            markers.push({ marker, machine });
+        });
+        
+        console.log('Machine markers added');
+
+        // Update status counts
+        function updateStatusCounts() {
+            const counts = { online: 0, warning: 0, offline: 0, error: 0 };
+            machines.forEach(machine => {
+                counts[machine.status] = (counts[machine.status] || 0) + 1;
+            });
+            
+            document.getElementById('online-count').textContent = counts.online;
+            document.getElementById('warning-count').textContent = counts.warning;
+            document.getElementById('offline-count').textContent = counts.offline;
+            document.getElementById('error-count').textContent = counts.error;
+        }
+
+        // Initialize
+        updateStatusCounts();
+        
+        // Update connection status
+        setTimeout(() => {
+            document.getElementById('connection-status').textContent = 'Connected - Live Updates';
+            document.getElementById('connection-status').style.color = '#10b981';
+        }, 1000);
+
+        // Simulate updates
+        function simulateUpdates() {
+            setInterval(() => {
+                const randomMachine = machines[Math.floor(Math.random() * machines.length)];
+                const oldStatus = randomMachine.status;
+                
+                let newStatus;
+                if (oldStatus === "online") {
+                    newStatus = Math.random() > 0.75 ? "warning" : "online";
+                } else if (oldStatus === "warning") {
+                    newStatus = ["online", "offline", "warning"][Math.floor(Math.random() * 3)];
+                } else {
+                    newStatus = Math.random() > 0.67 ? "online" : "offline";
+                }
+                
+                randomMachine.status = newStatus;
+                
+                // Update data
+                if (newStatus === "online") {
+                    randomMachine.data.temperature = (Math.random() * 15 + 35).toFixed(1);
+                    randomMachine.data.pressure = (Math.random() + 1.5).toFixed(1);
+                    randomMachine.data.speed = Math.floor(Math.random() * 800 + 1000);
+                } else if (newStatus === "warning") {
+                    randomMachine.data.temperature = (Math.random() * 15 + 50).toFixed(1);
+                    randomMachine.data.pressure = (Math.random() + 2.5).toFixed(1);
+                    randomMachine.data.speed = Math.floor(Math.random() * 700 + 500);
+                } else {
+                    randomMachine.data.temperature = 0;
+                    randomMachine.data.pressure = 0;
+                    randomMachine.data.speed = 0;
+                }
+                
+                // Update marker
+                const markerData = markers.find(m => m.machine.id === randomMachine.id);
+                if (markerData && markerData.machine.id !== "machine_001") {
+                    markerData.marker.setIcon(createCustomIcon(newStatus));
+                }
+                
+                updateStatusCounts();
+            }, 5000);
+        }
+
+        // Start simulation
+        simulateUpdates();
+        console.log('Map initialization complete');
+    </script>
+</body>
+</html>
