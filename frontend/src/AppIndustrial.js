@@ -1,28 +1,22 @@
 /**
- * Global Machine Monitor - React Frontend
+ * Global Machine Monitor - Industrial Theme Design
  * 
- * This file contains the main React application for the Global Machine Monitor.
- * It includes both simulation features and real API integration points.
- * 
- * IMPORTANT: When transitioning to production:
- * 1. Update API endpoints to production URLs
- * 2. Add proper error handling and loading states
- * 3. Add authentication and user management
- * 4. Optimize performance for large datasets
- * 5. Add proper testing and monitoring
+ * Industrial theme with metallic colors, bold typography, and technical styling
+ * Same functionality as App.js but with different visual styling
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import io from 'socket.io-client';
 import axios from 'axios';
 import styled from 'styled-components';
 import 'leaflet/dist/leaflet.css';
 
 // Import different map designs
+import App from './App';
 import AppDark from './AppDark';
 import AppMinimal from './AppMinimal';
-import AppIndustrial from './AppIndustrial';
 import AppModern from './AppModern';
 
 // Fix for default markers in react-leaflet
@@ -32,13 +26,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
-
-// =============================================================================
-// MARKER ARRANGEMENT - PRODUCTION READY
-// =============================================================================
-// This function arranges machine markers in country-based clusters
-// PRODUCTION: This function is production ready and handles real machine data
-// PRODUCTION: Consider adding performance optimizations for large datasets
 
 // Function to arrange markers in country boxes
 const arrangeMarkersInCountryBoxes = (machines) => {
@@ -107,47 +94,40 @@ const arrangeMarkersInCountryBoxes = (machines) => {
   return arranged;
 };
 
-// =============================================================================
-// CUSTOM ICONS - PRODUCTION READY
-// =============================================================================
-// This function creates custom markers for different machine types and statuses
-// PRODUCTION: This function is production ready and handles real machine data
-// PRODUCTION: Consider adding more icon types for different machine categories
-
-// Custom machine status icons with system type distinction
+// Industrial custom machine status icons
 const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   let color;
-  let shape = 'circle'; // Default shape
+  let shape = 'circle';
   let size = 20;
   
-  // Set color based on status
+  // Set color based on status - industrial colors
   switch (status) {
     case 'online':
-      color = '#28a745';
+      color = '#10b981';
       break;
     case 'warning':
-      color = '#ffc107';
+      color = '#f59e0b';
       break;
     case 'offline':
-      color = '#dc3545';
+      color = '#ef4444';
       break;
     case 'error':
-      color = '#6f42c1';
+      color = '#8b5cf6';
       break;
     default:
-      color = '#6c757d';
+      color = '#6b7280';
   }
   
   // Set shape and size based on system type
   if (systemType === 'Automated System 4000') {
     shape = 'circle';
-    size = 24; // Larger for AS4000
+    size = 26; // Larger for AS4000
   } else if (systemType === 'Mini-System 4000') {
     shape = 'square';
-    size = 20; // Smaller square for MS4000
+    size = 22; // Smaller square for MS4000
   }
 
-  const borderRadius = shape === 'circle' ? '50%' : '4px';
+  const borderRadius = shape === 'circle' ? '50%' : '3px';
   const borderWidth = systemType === 'Automated System 4000' ? '4px' : '3px';
   
   // Check if this is an alert status that should flash
@@ -165,15 +145,19 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   return L.divIcon({
     className: `custom-marker ${pulseClass}`,
     html: `<div style="
-      background-color: ${color};
+      background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%);
       width: ${size}px;
       height: ${size}px;
       border-radius: ${borderRadius};
-      border: ${borderWidth} solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       ${pulseStyle}
     "></div>`,
     iconSize: [size, size],
@@ -181,11 +165,15 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   });
 };
 
+// Industrial styled components
 const AppContainer = styled.div`
   height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #f9fafb;
+  font-family: 'Courier New', monospace;
   overflow: hidden;
   margin: 0;
   padding: 0;
@@ -228,10 +216,10 @@ const AppContainer = styled.div`
   }
 `;
 
-
 const MapWrapper = styled.div`
   flex: 1;
   position: relative;
+  background: #1f2937;
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -241,18 +229,19 @@ const StatusPanel = styled.div`
   position: absolute;
   top: 20px;
   right: 20px;
-  background: white;
-  padding: 1rem;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 2px #4b5563;
   z-index: 1000;
-  min-width: 200px;
+  min-width: 220px;
+  border: 2px solid #4b5563;
 `;
 
 const StatusItem = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   
   &:last-child {
     margin-bottom: 0;
@@ -263,48 +252,78 @@ const StatusIndicator = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  margin-right: 0.5rem;
-  background-color: ${props => {
+  margin-right: 0.75rem;
+  background: linear-gradient(135deg, ${props => {
     switch (props.$status) {
-      case 'online': return '#28a745';
-      case 'warning': return '#ffc107';
-      case 'offline': return '#dc3545';
-      case 'error': return '#6f42c1';
-      default: return '#6c757d';
+      case 'online': return '#10b981';
+      case 'warning': return '#f59e0b';
+      case 'offline': return '#ef4444';
+      case 'error': return '#8b5cf6';
+      default: return '#6b7280';
     }
-  }};
+  }} 0%, ${props => {
+    switch (props.$status) {
+      case 'online': return '#10b981dd';
+      case 'warning': return '#f59e0bdd';
+      case 'offline': return '#ef4444dd';
+      case 'error': return '#8b5cf6dd';
+      default: return '#6b7280dd';
+    }
+  }} 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 `;
 
 const MachinePopup = styled.div`
-  min-width: 250px;
+  min-width: 280px;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #f9fafb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 2px solid #4b5563;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 `;
 
 const MachineName = styled.h3`
-  margin: 0 0 0.5rem 0;
-  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const MachineDetails = styled.div`
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: #d1d5db;
+  font-weight: 500;
 `;
 
 const DetailLabel = styled.span`
-  font-weight: bold;
+  font-weight: 700;
   margin-right: 0.5rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  font-size: 0.85rem;
 `;
 
 const DataGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 `;
 
 const DataItem = styled.div`
-  background: #f8f9fa;
-  padding: 0.25rem 0.5rem;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  padding: 0.75rem;
   border-radius: 4px;
   font-size: 0.9rem;
+  text-align: center;
+  color: #ffffff;
+  border: 1px solid #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 // Analytics Dashboard Components
@@ -312,77 +331,99 @@ const AnalyticsPanel = styled.div`
   position: absolute;
   top: 20px;
   left: 20px;
-  background: white;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 2px #4b5563;
   z-index: 1000;
-  min-width: 280px;
-  max-width: 320px;
+  min-width: 300px;
+  max-width: 340px;
+  border: 2px solid #4b5563;
 `;
 
 const PanelHeader = styled.div`
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e9ecef;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #4b5563;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-  color: #2c3e50;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   
   &:hover {
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
   }
 `;
 
 const PanelContent = styled.div`
-  padding: 1rem;
+  padding: 1.5rem;
   display: ${props => props.$isOpen ? 'block' : 'none'};
 `;
 
 const FilterSection = styled.div`
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 `;
 
 const FilterLabel = styled.label`
   display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const FilterSelect = styled.select`
   width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #ced4da;
+  padding: 0.75rem;
+  border: 2px solid #4b5563;
   border-radius: 4px;
-  font-size: 0.8rem;
-  background: white;
+  font-size: 0.9rem;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  color: #ffffff;
+  font-weight: 600;
+  text-transform: uppercase;
+  
+  &:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+  }
 `;
 
 const MetricCard = styled.div`
-  background: #f8f9fa;
-  padding: 0.5rem;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  padding: 1rem;
   border-radius: 4px;
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid #6b7280;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 `;
 
 const MetricLabel = styled.div`
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 0.25rem;
+  font-weight: 700;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const MetricValue = styled.div`
-  color: #2c3e50;
-  font-size: 0.9rem;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 `;
 
 const ToggleIcon = styled.span`
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
   transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+  color: #10b981;
+  font-weight: 700;
 `;
 
 // Style Switcher Components
@@ -392,12 +433,11 @@ const StyleSwitcher = styled.div`
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-radius: 8px;
   padding: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 2px #4b5563;
+  border: 2px solid #4b5563;
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -409,12 +449,14 @@ const StyleSwitcherHeader = styled.div`
   align-items: center;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 8px;
+  border-radius: 4px;
   transition: background-color 0.2s ease;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   
   &:hover {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
   }
 `;
 
@@ -427,34 +469,38 @@ const StyleSwitcherContent = styled.div`
 
 const StyleButton = styled.button`
   padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.$isActive ? '#3b82f6' : '#e2e8f0'};
-  border-radius: 8px;
-  background: ${props => props.$isActive ? '#dbeafe' : '#ffffff'};
-  color: ${props => props.$isActive ? '#1e40af' : '#64748b'};
-  font-weight: ${props => props.$isActive ? '600' : '500'};
+  border: 2px solid ${props => props.$isActive ? '#10b981' : '#4b5563'};
+  border-radius: 4px;
+  background: ${props => props.$isActive ? 'rgba(16, 185, 129, 0.2)' : 'linear-gradient(135deg, #4b5563 0%, #374151 100%)'};
+  color: ${props => props.$isActive ? '#10b981' : '#d1d5db'};
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.85rem;
   
   &:hover {
-    border-color: #3b82f6;
-    background: #f8fafc;
-    color: #1e40af;
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
   }
 `;
 
 const StyleLabel = styled.span`
-  font-weight: 600;
-  color: #374151;
-  margin-right: 0.5rem;
+  font-weight: 700;
+  color: #ffffff;
   font-size: 0.9rem;
+  margin-right: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const StyleToggleIcon = styled.span`
   transition: transform 0.3s ease;
   transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-  color: #3b82f6;
-  font-weight: 600;
+  color: #10b981;
+  font-weight: 700;
   margin-left: 0.5rem;
 `;
 
@@ -465,16 +511,16 @@ const AlertFlash = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: ${props => props.$isFlashing ? 'rgba(255, 0, 0, 0.3)' : 'transparent'};
+  background: ${props => props.$isFlashing ? 'rgba(255, 0, 0, 0.4)' : 'transparent'};
   pointer-events: none;
   z-index: 9999;
   transition: background 0.1s ease;
   animation: ${props => props.$isFlashing ? 'strobe 1s ease-in-out' : 'none'};
   
   @keyframes strobe {
-    0%, 100% { background: rgba(255, 0, 0, 0.3); }
+    0%, 100% { background: rgba(255, 0, 0, 0.4); }
     25% { background: rgba(255, 0, 0, 0.1); }
-    50% { background: rgba(255, 0, 0, 0.5); }
+    50% { background: rgba(255, 0, 0, 0.6); }
     75% { background: rgba(255, 0, 0, 0.1); }
   }
 `;
@@ -499,20 +545,7 @@ function AutoFitBounds({ machines }) {
   return null;
 }
 
-// =============================================================================
-// MAIN APPLICATION COMPONENT - PRODUCTION READY
-// =============================================================================
-// This is the main React component that renders the machine monitoring dashboard
-// PRODUCTION: This component is production ready and handles real machine data
-// PRODUCTION: Consider adding error boundaries and performance optimizations
-
-function App() {
-  // =============================================================================
-  // STATE MANAGEMENT - PRODUCTION READY
-  // =============================================================================
-  // These state variables manage the application state
-  // PRODUCTION: Consider adding state persistence and error handling
-  
+function AppIndustrial() {
   const [machines, setMachines] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -520,81 +553,54 @@ function App() {
   const [systemFilter, setSystemFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
   const [styleSwitcherOpen, setStyleSwitcherOpen] = useState(false);
-  const [currentStyle, setCurrentStyle] = useState('original');
+  const [currentStyle, setCurrentStyle] = useState('industrial');
   const [alertFlash, setAlertFlash] = useState(false);
   const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [recentlyChangedMachines, setRecentlyChangedMachines] = useState(new Set());
 
   // Style definitions
   const styles = [
-    { id: 'original', name: 'Original', component: null },
+    { id: 'original', name: 'Original', component: App },
     { id: 'dark', name: 'Dark', component: AppDark },
     { id: 'minimal', name: 'Minimal', component: AppMinimal },
-    { id: 'industrial', name: 'Industrial', component: AppIndustrial },
+    { id: 'industrial', name: 'Industrial', component: null },
     { id: 'modern', name: 'Modern', component: AppModern }
   ];
-
-  // Get current style component
-  const CurrentStyleComponent = styles.find(s => s.id === currentStyle)?.component;
-
-  // =============================================================================
-  // API DATA LOADING - PRODUCTION READY
-  // =============================================================================
-  // This effect loads initial machine data from the API
-  // PRODUCTION: This is production ready and handles real API calls
-  // PRODUCTION: Consider adding loading states, error handling, and retry logic
 
   // Load initial machine data
   useEffect(() => {
     const fetchMachines = async () => {
       try {
         console.log('Fetching machines from API...');
-        // TODO: Update API endpoint for production
-        // TODO: Add authentication headers
-        // TODO: Add error handling and retry logic
         const response = await axios.get('/api/machines');
         console.log('API Response:', response.data);
         setMachines(response.data);
       } catch (error) {
         console.error('Failed to fetch machines:', error);
-        // TODO: Add proper error handling and user notification
       }
     };
 
     fetchMachines();
   }, []);
 
-  // =============================================================================
-  // WEBSOCKET CONNECTION - PRODUCTION READY
-  // =============================================================================
-  // This effect establishes WebSocket connection for real-time updates
-  // PRODUCTION: This is production ready and handles real WebSocket connections
-  // PRODUCTION: Consider adding reconnection logic and error handling
-
   // WebSocket connection for real-time updates
   useEffect(() => {
-    // TODO: Update WebSocket URL for production
-    // TODO: Add authentication for WebSocket connections
-    // TODO: Add reconnection logic and error handling
-    const newSocket = new WebSocket('ws://127.0.0.1:8000/ws');
+    const newSocket = io('ws://127.0.0.1:8000/ws');
     
-    newSocket.onopen = () => {
+    newSocket.on('connect', () => {
       setConnectionStatus('Connected');
       console.log('Connected to server');
-    };
+    });
 
-    newSocket.onclose = () => {
+    newSocket.on('disconnect', () => {
       setConnectionStatus('Disconnected');
       console.log('Disconnected from server');
-    };
+    });
 
-    newSocket.onmessage = (event) => {
+    newSocket.on('message', (data) => {
       try {
-        const message = JSON.parse(event.data);
-        console.log('RECEIVED:', message);
+        const message = JSON.parse(data);
         if (message.type === 'machine_update') {
-          console.log(`UPDATING: Machine ${message.machine_id} to ${message.status}`);
-          
           // Track this machine as recently changed for pulsing animation
           setRecentlyChangedMachines(prev => new Set([...prev, message.machine_id]));
           
@@ -622,9 +628,8 @@ function App() {
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
-        // TODO: Add proper error handling and user notification
       }
-    };
+    });
 
     return () => {
       newSocket.close();
@@ -700,7 +705,6 @@ function App() {
     );
 
     if (machinesNeedingAlert.length > 0) {
-      console.log(`ALERT TRIGGERED: ${machinesNeedingAlert.length} machines need attention!`);
       // Trigger flash effect
       setAlertFlash(true);
       setTimeout(() => setAlertFlash(false), 2000);
@@ -708,9 +712,9 @@ function App() {
       // Add machines to alerted set
       setAlertedMachines(prev => new Set([...prev, ...machinesNeedingAlert.map(m => m.id)]));
 
-      // Auto-open popups for alert machines (simulated by console log for now)
+      // Auto-open popups for alert machines
       machinesNeedingAlert.forEach(machine => {
-        console.log(`ALERT: ${machine.name} is ${machine.status.toUpperCase()}!`);
+        console.log(`🚨 ALERT: ${machine.name} is ${machine.status.toUpperCase()}!`);
       });
     }
 
@@ -742,6 +746,9 @@ function App() {
     }
   }, [recentlyChangedMachines, arrangedMachines]);
 
+  // Get current style component
+  const CurrentStyleComponent = styles.find(s => s.id === currentStyle)?.component;
+
   // If a different style is selected, render that component
   if (CurrentStyleComponent) {
     return <CurrentStyleComponent />;
@@ -754,7 +761,7 @@ function App() {
         {/* Style Switcher */}
         <StyleSwitcher>
           <StyleSwitcherHeader onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
-            <StyleLabel>Style:</StyleLabel>
+            <StyleLabel>STYLE:</StyleLabel>
             <StyleToggleIcon $isOpen={styleSwitcherOpen}>▼</StyleToggleIcon>
           </StyleSwitcherHeader>
           <StyleSwitcherContent $isOpen={styleSwitcherOpen}>
@@ -773,7 +780,7 @@ function App() {
         {/* Analytics Dashboard */}
         <AnalyticsPanel>
           <PanelHeader onClick={() => setAnalyticsOpen(!analyticsOpen)}>
-            <span>📊 Analytics & Filters</span>
+            <span>⚙️ ANALYTICS & FILTERS</span>
             <ToggleIcon $isOpen={analyticsOpen}>▼</ToggleIcon>
           </PanelHeader>
           <PanelContent $isOpen={analyticsOpen}>
@@ -817,7 +824,7 @@ function App() {
               </FilterSelect>
             </FilterSection>
 
-            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e9ecef' }}>
+            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '2px solid #4b5563' }}>
               <MetricCard>
                 <MetricLabel>Total Machines</MetricLabel>
                 <MetricValue>{analytics.total}</MetricValue>
@@ -857,12 +864,12 @@ function App() {
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           
-           {/* Auto-fit bounds to show all markers */}
-           <AutoFitBounds machines={arrangedMachines} />
+          {/* Auto-fit bounds to show all markers */}
+          <AutoFitBounds machines={arrangedMachines} />
 
           {/* Machine markers */}
           {arrangedMachines.map((machine) => (
@@ -907,51 +914,53 @@ function App() {
         </MapContainer>
 
         <StatusPanel>
-          <h4 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>Machine Status</h4>
-          <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#6c757d' }}>
-            Connection: {connectionStatus}
+          <h4 style={{ margin: '0 0 1.25rem 0', color: '#ffffff', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Machine Status</h4>
+          <div style={{ marginBottom: '1.25rem', fontSize: '0.9rem', color: '#d1d5db', fontWeight: '600' }}>
+            Connection: <span style={{ color: connectionStatus === 'Connected' ? '#10b981' : '#ef4444' }}>{connectionStatus.toUpperCase()}</span>
           </div>
           
-           <StatusItem>
-             <StatusIndicator $status="online" />
-             Online: {statusCounts.online || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="warning" />
-             Warning: {statusCounts.warning || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="offline" />
-             Offline: {statusCounts.offline || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="error" />
-             Error: {statusCounts.error || 0}
-           </StatusItem>
+          <StatusItem>
+            <StatusIndicator $status="online" />
+            Online: {statusCounts.online || 0}
+          </StatusItem>
+          <StatusItem>
+            <StatusIndicator $status="warning" />
+            Warning: {statusCounts.warning || 0}
+          </StatusItem>
+          <StatusItem>
+            <StatusIndicator $status="offline" />
+            Offline: {statusCounts.offline || 0}
+          </StatusItem>
+          <StatusItem>
+            <StatusIndicator $status="error" />
+            Error: {statusCounts.error || 0}
+          </StatusItem>
           
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
-            <h5 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50', fontSize: '0.9rem' }}>System Types:</h5>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '2px solid #4b5563' }}>
+            <h5 style={{ margin: '0 0 0.75rem 0', color: '#ffffff', fontSize: '0.9rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>System Types:</h5>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem' }}>
               <div style={{
                 width: '16px',
                 height: '16px',
                 borderRadius: '50%',
-                backgroundColor: '#28a745',
-                border: '3px solid white',
-                marginRight: '0.5rem'
+                background: 'linear-gradient(135deg, #10b981 0%, #10b981dd 100%)',
+                border: '3px solid #ffffff',
+                marginRight: '0.75rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}></div>
-              <span style={{ fontSize: '0.8rem' }}>Automated System 4000</span>
+              <span style={{ fontSize: '0.85rem', color: '#d1d5db', fontWeight: '600' }}>Automated System 4000</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{
                 width: '14px',
                 height: '14px',
-                borderRadius: '4px',
-                backgroundColor: '#28a745',
-                border: '2px solid white',
-                marginRight: '0.5rem'
+                borderRadius: '3px',
+                background: 'linear-gradient(135deg, #10b981 0%, #10b981dd 100%)',
+                border: '3px solid #ffffff',
+                marginRight: '0.75rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}></div>
-              <span style={{ fontSize: '0.8rem' }}>Mini-System 4000</span>
+              <span style={{ fontSize: '0.85rem', color: '#d1d5db', fontWeight: '600' }}>Mini-System 4000</span>
             </div>
           </div>
         </StatusPanel>
@@ -960,4 +969,4 @@ function App() {
   );
 }
 
-export default App;
+export default AppIndustrial;

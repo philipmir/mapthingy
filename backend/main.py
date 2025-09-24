@@ -1,3 +1,17 @@
+"""
+Global Machine Monitor API - Production Ready Backend
+
+This file contains the main FastAPI application for the Global Machine Monitor.
+It includes both simulation code (for demo purposes) and real API integration points.
+
+IMPORTANT: When transitioning to production:
+1. Replace SAMPLE_MACHINES with real API calls
+2. Remove simulate_machine_updates() function
+3. Implement real WebSocket connections to machine APIs
+4. Add proper authentication and security
+5. Configure production database
+"""
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,43 +24,73 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 import uvicorn
 
+# =============================================================================
+# PRODUCTION CONFIGURATION
+# =============================================================================
+# TODO: Move these to environment variables in production
+# TODO: Add proper authentication middleware
+# TODO: Add rate limiting and security headers
+# TODO: Configure production database connection
+
 app = FastAPI(title="Global Machine Monitor API", version="1.0.0")
 
-# Enable CORS for React frontend
+# =============================================================================
+# CORS CONFIGURATION - UPDATE FOR PRODUCTION
+# =============================================================================
+# TODO: Restrict CORS origins in production to specific domains
+# TODO: Remove wildcard methods and headers for security
+# TODO: Add proper CORS preflight handling
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # PRODUCTION: Replace with actual frontend domains
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # PRODUCTION: Specify exact methods needed
+    allow_headers=["*"],  # PRODUCTION: Specify exact headers needed
 )
 
-# WebSocket connection manager
+# =============================================================================
+# WEBSOCKET CONNECTION MANAGER - PRODUCTION READY
+# =============================================================================
+# This class manages WebSocket connections for real-time updates
+# PRODUCTION: This is needed for real-time machine status updates
+# PRODUCTION: Consider adding connection limits and authentication
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+        # TODO: Add connection limits for production
+        # TODO: Add authentication for WebSocket connections
+        # TODO: Add connection monitoring and logging
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        # TODO: Log connection in production
+        # TODO: Add connection authentication
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
+        # TODO: Log disconnection in production
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
+        """Broadcast message to all connected clients - PRODUCTION READY"""
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
             except:
                 # Remove disconnected clients
                 self.active_connections.remove(connection)
+                # TODO: Add proper error handling and logging
 
 manager = ConnectionManager()
 
-# Machine data models
+# =============================================================================
+# DATA MODELS - PRODUCTION READY
+# =============================================================================
+# These models define the structure of machine data
+# PRODUCTION: These models are used for API validation and should be kept
 class MachineData(BaseModel):
     id: str
     name: str
@@ -55,15 +99,25 @@ class MachineData(BaseModel):
     status: str  # "online", "offline", "warning", "error"
     last_seen: datetime
     location: str
-    data: Dict[str, Any] = {}
+    data: Dict[str, Any] = {}  # Contains temperature, pressure, speed, disk_volume
 
 class MachineUpdate(BaseModel):
+    """Model for machine status updates - PRODUCTION READY"""
     machine_id: str
     status: str
-    data: Dict[str, Any] = {}
+    data: Dict[str, Any] = {}  # Sensor data from real machines
     timestamp: datetime
 
+# =============================================================================
+# SIMULATION DATA - REPLACE WITH REAL API CALLS IN PRODUCTION
+# =============================================================================
+# WARNING: This is SIMULATION DATA for demo purposes only
+# PRODUCTION: Replace this entire section with real API calls to customer machines
+# PRODUCTION: Use the api_client.py module to fetch real machine data
+# PRODUCTION: Consider caching real data in database for performance
+
 # Real SinterCast customer machine data - Automated System 4000
+# TODO: Replace with real API calls in production
 AUTOMATED_SYSTEM_4000 = [
     {
         "id": "asimco_china",
@@ -73,7 +127,7 @@ AUTOMATED_SYSTEM_4000 = [
         "status": "online",
         "location": "China",
         "last_seen": datetime.now(),
-        "data": {"temperature": 42.1, "pressure": 2.2, "speed": 1450}
+        "data": {"temperature": 42.1, "pressure": 2.2, "speed": 1450, "disk_volume": 78.5}
     },
     {
         "id": "caterpillar_usa",
@@ -83,7 +137,7 @@ AUTOMATED_SYSTEM_4000 = [
         "status": "online",
         "location": "USA",
         "last_seen": datetime.now(),
-        "data": {"temperature": 38.7, "pressure": 1.9, "speed": 1600}
+        "data": {"temperature": 38.7, "pressure": 1.9, "speed": 1600, "disk_volume": 82.3}
     },
     {
         "id": "daedong_korea",
@@ -93,7 +147,7 @@ AUTOMATED_SYSTEM_4000 = [
         "status": "online",
         "location": "Korea",
         "last_seen": datetime.now(),
-        "data": {"temperature": 41.3, "pressure": 2.1, "speed": 1500}
+        "data": {"temperature": 41.3, "pressure": 2.1, "speed": 1500, "disk_volume": 75.8}
     },
     {
         "id": "dashiang_1",
@@ -103,7 +157,7 @@ AUTOMATED_SYSTEM_4000 = [
         "status": "online",
         "location": "China",
         "last_seen": datetime.now(),
-        "data": {"temperature": 39.8, "pressure": 2.0, "speed": 1550}
+        "data": {"temperature": 39.8, "pressure": 2.0, "speed": 1550, "disk_volume": 88.2}
     },
     {
         "id": "dashiang_2",
@@ -113,7 +167,7 @@ AUTOMATED_SYSTEM_4000 = [
         "status": "warning",
         "location": "China",
         "last_seen": datetime.now(),
-        "data": {"temperature": 48.2, "pressure": 2.6, "speed": 1200}
+        "data": {"temperature": 48.2, "pressure": 2.6, "speed": 1200, "disk_volume": 45.7}
     },
     {
         "id": "dongfeng_china",
@@ -180,10 +234,10 @@ AUTOMATED_SYSTEM_4000 = [
         "name": "IronCast",
         "latitude": 25.6866,
         "longitude": -100.3161,
-        "status": "warning",
+        "status": "error",
         "location": "Mexico",
         "last_seen": datetime.now(),
-        "data": {"temperature": 47.3, "pressure": 2.7, "speed": 1100}
+        "data": {"temperature": 75.3, "pressure": 4.7, "speed": 500, "disk_volume": 15.2}
     },
     {
         "id": "maringa_brazil",
@@ -337,7 +391,7 @@ MINI_SYSTEM_4000 = [
         "status": "online",
         "location": "USA",
         "last_seen": datetime.now(),
-        "data": {"temperature": 35.2, "pressure": 1.5, "speed": 800}
+        "data": {"temperature": 35.2, "pressure": 1.5, "speed": 800, "disk_volume": 92.1}
     },
     {
         "id": "case_western_usa",
@@ -347,7 +401,7 @@ MINI_SYSTEM_4000 = [
         "status": "online",
         "location": "USA",
         "last_seen": datetime.now(),
-        "data": {"temperature": 36.8, "pressure": 1.6, "speed": 750}
+        "data": {"temperature": 36.8, "pressure": 1.6, "speed": 750, "disk_volume": 85.4}
     },
     {
         "id": "csic_china",
@@ -357,7 +411,7 @@ MINI_SYSTEM_4000 = [
         "status": "online",
         "location": "China",
         "last_seen": datetime.now(),
-        "data": {"temperature": 37.4, "pressure": 1.7, "speed": 850}
+        "data": {"temperature": 37.4, "pressure": 1.7, "speed": 850, "disk_volume": 78.9}
     },
     {
         "id": "dongfeng_mini_china",
@@ -367,7 +421,7 @@ MINI_SYSTEM_4000 = [
         "status": "online",
         "location": "China",
         "last_seen": datetime.now(),
-        "data": {"temperature": 38.1, "pressure": 1.8, "speed": 900}
+        "data": {"temperature": 38.1, "pressure": 1.8, "speed": 900, "disk_volume": 71.2}
     },
     {
         "id": "dongya_china",
@@ -571,8 +625,16 @@ MINI_SYSTEM_4000 = [
     }
 ]
 
+# =============================================================================
+# SIMULATION DATA AGGREGATION - REPLACE IN PRODUCTION
+# =============================================================================
+# WARNING: This combines simulation data - REPLACE WITH REAL API CALLS
+# PRODUCTION: Replace SAMPLE_MACHINES with real database queries
+# PRODUCTION: Use database.py module to fetch real machine data
+# PRODUCTION: Implement proper data caching and refresh strategies
+
 # Combine both systems with system type labels
-SAMPLE_MACHINES = []
+SAMPLE_MACHINES = []  # TODO: Replace with real database query in production
 
 # Add Automated System 4000 machines
 for machine in AUTOMATED_SYSTEM_4000:
@@ -588,19 +650,43 @@ for machine in MINI_SYSTEM_4000:
     machine_copy["name"] = f"{machine['name']} (MS4000)"
     SAMPLE_MACHINES.append(machine_copy)
 
-# API Endpoints
+# =============================================================================
+# API ENDPOINTS - PRODUCTION READY WITH MODIFICATIONS NEEDED
+# =============================================================================
+# These endpoints are production ready but need real data sources
+# PRODUCTION: Replace SAMPLE_MACHINES with real database queries
+# PRODUCTION: Add authentication and authorization
+# PRODUCTION: Add proper error handling and logging
+# PRODUCTION: Add rate limiting and request validation
+
 @app.get("/")
 async def root():
+    """Health check endpoint - PRODUCTION READY"""
     return {"message": "Global Machine Monitor API", "status": "running"}
 
 @app.get("/api/machines")
 async def get_machines():
-    """Get all machine data"""
+    """
+    Get all machine data - PRODUCTION READY
+    
+    PRODUCTION: Replace SAMPLE_MACHINES with:
+    - Real database query using database.py
+    - Real API calls using api_client.py
+    - Cached data for performance
+    """
+    # TODO: Replace with real database query
+    # machines = await db_manager.get_all_machines()
     return SAMPLE_MACHINES
 
 @app.get("/api/machines/{machine_id}")
 async def get_machine(machine_id: str):
-    """Get specific machine data"""
+    """
+    Get specific machine data - PRODUCTION READY
+    
+    PRODUCTION: Replace with real database query
+    """
+    # TODO: Replace with real database query
+    # machine = await db_manager.get_machine_by_id(machine_id)
     machine = next((m for m in SAMPLE_MACHINES if m["id"] == machine_id), None)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
@@ -608,7 +694,17 @@ async def get_machine(machine_id: str):
 
 @app.post("/api/machines/{machine_id}/status")
 async def update_machine_status(machine_id: str, update: MachineUpdate):
-    """Update machine status (simulate machine reporting)"""
+    """
+    Update machine status - PRODUCTION READY
+    
+    PRODUCTION: This endpoint receives real status updates from machines
+    PRODUCTION: Replace SAMPLE_MACHINES with real database updates
+    PRODUCTION: Add authentication for machine reporting
+    PRODUCTION: Add validation for machine data
+    """
+    # TODO: Replace with real database update
+    # await db_manager.update_machine_status(machine_id, update.status, update.data)
+    
     machine = next((m for m in SAMPLE_MACHINES if m["id"] == machine_id), None)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
@@ -617,7 +713,7 @@ async def update_machine_status(machine_id: str, update: MachineUpdate):
     machine["last_seen"] = update.timestamp
     machine["data"].update(update.data)
     
-    # Broadcast update to all connected clients
+    # Broadcast update to all connected clients - PRODUCTION READY
     await manager.broadcast(json.dumps({
         "type": "machine_update",
         "machine_id": machine_id,
@@ -630,63 +726,127 @@ async def update_machine_status(machine_id: str, update: MachineUpdate):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time updates"""
+    """
+    WebSocket endpoint for real-time updates - PRODUCTION READY
+    
+    PRODUCTION: This endpoint provides real-time machine status updates
+    PRODUCTION: Add authentication for WebSocket connections
+    PRODUCTION: Add connection monitoring and logging
+    PRODUCTION: Consider adding connection limits
+    """
     await manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive
+            # Keep connection alive - PRODUCTION READY
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        # TODO: Add logging for disconnections in production
 
-# Simulate real-time machine status updates
+# =============================================================================
+# SIMULATION CODE - REMOVE IN PRODUCTION
+# =============================================================================
+# WARNING: This is SIMULATION CODE for demo purposes only
+# PRODUCTION: REMOVE this entire function in production
+# PRODUCTION: Replace with real WebSocket connections to machine APIs
+# PRODUCTION: Use api_client.py to connect to real machine data sources
+
 async def simulate_machine_updates():
-    """Simulate machine status changes for demo purposes"""
+    """
+    SIMULATION FUNCTION - REMOVE IN PRODUCTION
+    
+    This function simulates machine status changes for demo purposes.
+    In production, this should be replaced with:
+    1. Real WebSocket connections to machine APIs
+    2. Real machine data polling
+    3. Real status update handling
+    """
     while True:
-        await asyncio.sleep(10)  # Update every 10 seconds
+        await asyncio.sleep(30)  # Update every 30 seconds
         
-        # Randomly update a machine status
+        # Randomly update a machine status - SIMULATION ONLY
         machine = random.choice(SAMPLE_MACHINES)
         old_status = machine["status"]
+        print(f"SIMULATION: Updating machine {machine['name']} from {old_status}...")
         
-        # Simulate status changes
+        # Simulate status changes - SIMULATION LOGIC (more frequent changes)
         if old_status == "online":
-            new_status = random.choice(["warning", "online", "online", "online"])  # 75% online, 25% warning
+            new_status = random.choice(["warning", "offline", "error", "online", "online"])  # 60% online, 40% alert
         elif old_status == "warning":
-            new_status = random.choice(["online", "offline", "warning", "warning"])  # 25% each
-        else:  # offline
-            new_status = random.choice(["online", "offline", "offline"])  # 33% online, 67% offline
+            new_status = random.choice(["online", "offline", "error", "warning"])  # 25% each
+        elif old_status == "offline":
+            new_status = random.choice(["online", "warning", "offline", "offline"])  # 25% online, 25% warning, 50% offline
+        else:  # error
+            new_status = random.choice(["online", "warning", "offline", "error"])  # 25% each
         
         machine["status"] = new_status
         machine["last_seen"] = datetime.now()
+        print(f"SIMULATION: Machine {machine['name']} changed from {old_status} to {new_status}")
         
-        # Update some data values
+        # Update some data values - SIMULATION DATA
         if new_status == "online":
             machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
             machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
             machine["data"]["speed"] = random.randint(1000, 1800)
+            machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
         elif new_status == "warning":
             machine["data"]["temperature"] = round(random.uniform(50, 65), 1)
             machine["data"]["pressure"] = round(random.uniform(2.5, 3.5), 1)
             machine["data"]["speed"] = random.randint(500, 1200)
+            machine["data"]["disk_volume"] = round(random.uniform(20, 60), 1)
+        elif new_status == "error":
+            machine["data"]["temperature"] = round(random.uniform(70, 85), 1)  # Very high temperature
+            machine["data"]["pressure"] = round(random.uniform(4.0, 5.5), 1)  # Very high pressure
+            machine["data"]["speed"] = random.randint(200, 800)  # Low speed
+            machine["data"]["disk_volume"] = round(random.uniform(5, 25), 1)  # Very low disk space
         else:  # offline
             machine["data"]["temperature"] = 0
             machine["data"]["pressure"] = 0
             machine["data"]["speed"] = 0
+            machine["data"]["disk_volume"] = 0
         
-        # Broadcast update
-        await manager.broadcast(json.dumps({
+        # Broadcast update - PRODUCTION READY (this part can stay)
+        update_message = {
             "type": "machine_update",
             "machine_id": machine["id"],
             "status": new_status,
             "data": machine["data"],
             "timestamp": machine["last_seen"].isoformat()
-        }))
+        }
+        print(f"BROADCASTING: Sending update for {machine['name']} to {len(manager.active_connections)} clients")
+        await manager.broadcast(json.dumps(update_message))
 
-# Start background task for simulated updates
+# =============================================================================
+# APPLICATION STARTUP - PRODUCTION CONFIGURATION NEEDED
+# =============================================================================
+# PRODUCTION: Replace simulation with real API connections
+# PRODUCTION: Add proper error handling and logging
+# PRODUCTION: Add health checks and monitoring
+# PRODUCTION: Configure production database connection
+
 @app.on_event("startup")
 async def startup_event():
+    """
+    Application startup event - PRODUCTION CONFIGURATION NEEDED
+    
+    PRODUCTION: Replace simulation with:
+    1. Real database initialization
+    2. Real API client connections
+    3. Real WebSocket connections to machines
+    4. Health check endpoints
+    5. Monitoring setup
+    """
+    # TODO: Initialize database connection in production
+    # TODO: Initialize API clients in production
+    # TODO: Start real WebSocket connections to machines
+    # TODO: Add health check endpoints
+    
+    # SIMULATION ONLY - REMOVE IN PRODUCTION
     asyncio.create_task(simulate_machine_updates())
 
 if __name__ == "__main__":
+    # PRODUCTION: Use proper ASGI server (Gunicorn + Uvicorn)
+    # PRODUCTION: Add SSL/TLS configuration
+    # PRODUCTION: Add proper logging configuration
+    # PRODUCTION: Add monitoring and metrics
     uvicorn.run(app, host="0.0.0.0", port=8000)
