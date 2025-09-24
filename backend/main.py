@@ -761,60 +761,87 @@ async def simulate_machine_updates():
     2. Real machine data polling
     3. Real status update handling
     """
+    # First, ensure all machines start as online
+    for machine in SAMPLE_MACHINES:
+        machine["status"] = "online"
+        machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
+        machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
+        machine["data"]["speed"] = random.randint(1000, 1800)
+        machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
+    
+    print("SIMULATION: All machines set to online status")
+    
     while True:
-        await asyncio.sleep(30)  # Update every 30 seconds
+        await asyncio.sleep(15)  # Update every 15 seconds
         
-        # Randomly update a machine status - SIMULATION ONLY
-        machine = random.choice(SAMPLE_MACHINES)
-        old_status = machine["status"]
-        print(f"SIMULATION: Updating machine {machine['name']} from {old_status}...")
+        # Find machines that are currently in alert status
+        alert_machines = [m for m in SAMPLE_MACHINES if m["status"] in ["warning", "offline", "error"]]
         
-        # Simulate status changes - SIMULATION LOGIC (more frequent changes)
-        if old_status == "online":
-            new_status = random.choice(["warning", "offline", "error", "online", "online"])  # 60% online, 40% alert
-        elif old_status == "warning":
-            new_status = random.choice(["online", "offline", "error", "warning"])  # 25% each
-        elif old_status == "offline":
-            new_status = random.choice(["online", "warning", "offline", "offline"])  # 25% online, 25% warning, 50% offline
-        else:  # error
-            new_status = random.choice(["online", "warning", "offline", "error"])  # 25% each
-        
-        machine["status"] = new_status
-        machine["last_seen"] = datetime.now()
-        print(f"SIMULATION: Machine {machine['name']} changed from {old_status} to {new_status}")
-        
-        # Update some data values - SIMULATION DATA
-        if new_status == "online":
-            machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
-            machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
-            machine["data"]["speed"] = random.randint(1000, 1800)
-            machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
-        elif new_status == "warning":
-            machine["data"]["temperature"] = round(random.uniform(50, 65), 1)
-            machine["data"]["pressure"] = round(random.uniform(2.5, 3.5), 1)
-            machine["data"]["speed"] = random.randint(500, 1200)
-            machine["data"]["disk_volume"] = round(random.uniform(20, 60), 1)
-        elif new_status == "error":
-            machine["data"]["temperature"] = round(random.uniform(70, 85), 1)  # Very high temperature
-            machine["data"]["pressure"] = round(random.uniform(4.0, 5.5), 1)  # Very high pressure
-            machine["data"]["speed"] = random.randint(200, 800)  # Low speed
-            machine["data"]["disk_volume"] = round(random.uniform(5, 25), 1)  # Very low disk space
-        else:  # offline
-            machine["data"]["temperature"] = 0
-            machine["data"]["pressure"] = 0
-            machine["data"]["speed"] = 0
-            machine["data"]["disk_volume"] = 0
-        
-        # Broadcast update - PRODUCTION READY (this part can stay)
-        update_message = {
-            "type": "machine_update",
-            "machine_id": machine["id"],
-            "status": new_status,
-            "data": machine["data"],
-            "timestamp": machine["last_seen"].isoformat()
-        }
-        print(f"BROADCASTING: Sending update for {machine['name']} to {len(manager.active_connections)} clients")
-        await manager.broadcast(json.dumps(update_message))
+        # If there are alert machines, reset them to online (green recovery)
+        if alert_machines:
+            for machine in alert_machines:
+                old_status = machine["status"]
+                machine["status"] = "online"
+                machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
+                machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
+                machine["data"]["speed"] = random.randint(1000, 1800)
+                machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
+                machine["last_seen"] = datetime.now()
+                print(f"SIMULATION: Machine {machine['name']} recovered from {old_status} to online")
+                
+                # Broadcast recovery update
+                update_message = {
+                    "type": "machine_update",
+                    "machine_id": machine["id"],
+                    "status": "online",
+                    "data": machine["data"],
+                    "timestamp": machine["last_seen"].isoformat()
+                }
+                print(f"BROADCASTING: Sending recovery update for {machine['name']} to {len(manager.active_connections)} clients")
+                await manager.broadcast(json.dumps(update_message))
+            
+            # Wait 30 seconds before creating new alert to ensure clean separation
+            await asyncio.sleep(30)
+        else:
+            # No alert machines, pick ONE random machine to change to alert status
+            machine = random.choice(SAMPLE_MACHINES)
+            old_status = machine["status"]
+            
+            # Only change to alert status (not back to online)
+            alert_statuses = ["warning", "offline", "error"]
+            new_status = random.choice(alert_statuses)
+            
+            machine["status"] = new_status
+            machine["last_seen"] = datetime.now()
+            print(f"SIMULATION: Machine {machine['name']} changed from {old_status} to {new_status}")
+            
+            # Update data values based on new status - SIMULATION DATA
+            if new_status == "warning":
+                machine["data"]["temperature"] = round(random.uniform(50, 65), 1)
+                machine["data"]["pressure"] = round(random.uniform(2.5, 3.5), 1)
+                machine["data"]["speed"] = random.randint(500, 1200)
+                machine["data"]["disk_volume"] = round(random.uniform(20, 60), 1)
+            elif new_status == "error":
+                machine["data"]["temperature"] = round(random.uniform(70, 85), 1)  # Very high temperature
+                machine["data"]["pressure"] = round(random.uniform(4.0, 5.5), 1)  # Very high pressure
+                machine["data"]["speed"] = random.randint(200, 800)  # Low speed
+                machine["data"]["disk_volume"] = round(random.uniform(5, 25), 1)  # Very low disk space
+            else:  # offline
+                machine["data"]["temperature"] = 0
+                machine["data"]["pressure"] = 0
+                machine["data"]["speed"] = 0
+                machine["data"]["disk_volume"] = 0
+            
+            # Broadcast alert update
+            update_message = {
+                "type": "machine_update",
+                "machine_id": machine["id"],
+                "status": new_status,
+                "data": machine["data"],
+                "timestamp": machine["last_seen"].isoformat()
+            }
+            print(f"BROADCASTING: Sending alert update for {machine['name']} to {len(manager.active_connections)} clients")
+            await manager.broadcast(json.dumps(update_message))
 
 # =============================================================================
 # APPLICATION STARTUP - PRODUCTION CONFIGURATION NEEDED

@@ -133,14 +133,22 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   // Check if this is an alert status that should flash
   const alertStatuses = ['warning', 'offline', 'error'];
   const isAlertStatus = alertStatuses.includes(status);
+  const isOnlineStatus = status === 'online';
   
-  // Create pulsing red border for recently changed machines with alert status
-  const shouldPulse = isAlertStatus && recentlyChanged;
-  const pulseClass = shouldPulse ? 'pulse-red' : '';
-  const pulseStyle = shouldPulse ? `
-    border: ${borderWidth} solid rgba(255, 0, 0, 0.8) !important;
-    animation: pulse-individual 1s ease-in-out infinite;
-  ` : '';
+  // Create pulsing border for recently changed machines
+  const shouldPulseRed = isAlertStatus && recentlyChanged;
+  const shouldPulseGreen = isOnlineStatus && recentlyChanged;
+  const shouldPulse = shouldPulseRed || shouldPulseGreen;
+  
+           const pulseClass = shouldPulse ? (shouldPulseRed ? 'pulse-red' : 'pulse-green') : '';
+           const pulseColor = shouldPulseRed ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
+           const pulseAnimation = shouldPulseRed ? 'pulse-individual' : 'pulse-green';
+           const pulseStyle = shouldPulse ? `
+             border: ${borderWidth} solid ${pulseColor} !important;
+             animation: ${pulseAnimation} 1s ease-in-out infinite;
+             z-index: 9999 !important;
+             position: relative;
+           ` : '';
 
   return L.divIcon({
     className: `custom-marker ${pulseClass}`,
@@ -199,17 +207,33 @@ const AppContainer = styled.div`
     }
   }
   
-  /* Individual pulsing animation for newly changed machines */
-  @keyframes pulse-individual {
-    0%, 100% { 
-      border: 3px solid rgba(255, 0, 0, 0.8);
-      box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-    }
-    50% { 
-      border: 6px solid rgba(255, 0, 0, 1);
-      box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
-    }
-  }
+           /* Individual pulsing animation for newly changed machines */
+           @keyframes pulse-individual {
+             0%, 100% { 
+               border: 3px solid rgba(255, 0, 0, 0.8);
+               box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+               z-index: 9999;
+             }
+             50% { 
+               border: 6px solid rgba(255, 0, 0, 1);
+               box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
+               z-index: 9999;
+             }
+           }
+           
+           /* Green pulsing animation for recoveries */
+           @keyframes pulse-green {
+             0%, 100% { 
+               border: 3px solid rgba(0, 255, 0, 0.8);
+               box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+               z-index: 9999;
+             }
+             50% { 
+               border: 6px solid rgba(0, 255, 0, 1);
+               box-shadow: 0 0 0 12px rgba(0, 255, 0, 0.4);
+               z-index: 9999;
+             }
+           }
 `;
 
 const MapWrapper = styled.div`
@@ -472,7 +496,7 @@ const AlertFlash = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: ${props => props.$isFlashing ? 'rgba(255, 0, 0, 0.3)' : 'transparent'};
+  background: ${props => props.$isFlashing ? (props.$flashColor === 'green' ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)') : 'transparent'};
   pointer-events: none;
   z-index: 9999;
   transition: background 0.1s ease;
@@ -516,8 +540,11 @@ function AppMinimal() {
   const [styleSwitcherOpen, setStyleSwitcherOpen] = useState(false);
   const [currentStyle, setCurrentStyle] = useState('minimal');
   const [alertFlash, setAlertFlash] = useState(false);
+  const [flashColor, setFlashColor] = useState('red');
   const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [recentlyChangedMachines, setRecentlyChangedMachines] = useState(new Set());
+  const [machinePreviousStatus, setMachinePreviousStatus] = useState(new Map());
+  const [lastFlashTime, setLastFlashTime] = useState(0);
 
   // Style definitions
   const styles = [
@@ -667,6 +694,7 @@ function AppMinimal() {
 
     if (machinesNeedingAlert.length > 0) {
       // Trigger flash effect
+      setFlashColor('red');
       setAlertFlash(true);
       setTimeout(() => setAlertFlash(false), 2000);
 
@@ -692,17 +720,33 @@ function AppMinimal() {
     }
   }, [arrangedMachines, alertedMachines]);
 
-  // Flash effect when machines change to alert status
+  // Flash effect when machines change status
   useEffect(() => {
     const alertStatuses = ['warning', 'offline', 'error'];
     const newlyChangedToAlert = arrangedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && recentlyChangedMachines.has(machine.id)
     );
+    const newlyReturnedToOnline = arrangedMachines.filter(machine => 
+      machine.status === 'online' && recentlyChangedMachines.has(machine.id)
+    );
 
-    if (newlyChangedToAlert.length > 0) {
-      console.log(`FLASH TRIGGERED: ${newlyChangedToAlert.length} machines just changed to alert status!`);
-      // Trigger flash effect for newly changed machines
+    // Only trigger flash if there are changes - prioritize green for recoveries
+    const now = Date.now();
+    const timeSinceLastFlash = now - lastFlashTime;
+    
+    if (newlyReturnedToOnline.length > 0 && timeSinceLastFlash > 3000) {
+      console.log(`GREEN FLASH TRIGGERED: ${newlyReturnedToOnline.length} machines returned to online status!`);
+      // Trigger green flash effect for machines returning to online
+      setFlashColor('green');
       setAlertFlash(true);
+      setLastFlashTime(now);
+      setTimeout(() => setAlertFlash(false), 2000);
+    } else if (newlyChangedToAlert.length > 0 && timeSinceLastFlash > 3000) {
+      console.log(`RED FLASH TRIGGERED: ${newlyChangedToAlert.length} machines just changed to alert status!`);
+      // Trigger red flash effect for newly changed machines
+      setFlashColor('red');
+      setAlertFlash(true);
+      setLastFlashTime(now);
       setTimeout(() => setAlertFlash(false), 2000);
     }
   }, [recentlyChangedMachines, arrangedMachines]);
@@ -717,7 +761,7 @@ function AppMinimal() {
 
   return (
     <AppContainer>
-      <AlertFlash $isFlashing={alertFlash} />
+      <AlertFlash $isFlashing={alertFlash} $flashColor={flashColor} />
       <MapWrapper>
         {/* Style Switcher */}
         <StyleSwitcher>
