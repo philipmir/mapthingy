@@ -1,0 +1,833 @@
+/* Global Machine Monitor - Main Stylesheet */
+
+/* =============================================================================
+   GLOBAL STYLES
+   ============================================================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f8f9fa;
+  color: #2c3e50;
+  overflow: hidden;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* =============================================================================
+   APP CONTAINER
+   ============================================================================= */
+
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* =============================================================================
+   MAP WRAPPER
+   ============================================================================= */
+
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* =============================================================================
+   STATUS PANEL
+   ============================================================================= */
+
+.status-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+/* Status Colors - Specification Compliant */
+.status-indicator.grey {
+  background-color: #6c757d; /* Not connected to SOSON */
+}
+
+.status-indicator.black {
+  background-color: #000000; /* System not accessible */
+}
+
+.status-indicator.green {
+  background-color: #28a745; /* Active with no alarms */
+}
+
+.status-indicator.yellow {
+  background-color: #ffc107; /* Active with warnings */
+}
+
+.status-indicator.red {
+  background-color: #dc3545; /* Active with errors */
+}
+
+/* Legacy support */
+.status-indicator.online {
+  background-color: #28a745;
+}
+
+.status-indicator.warning {
+  background-color: #ffc107;
+}
+
+.status-indicator.offline {
+  background-color: #000000;
+}
+
+.status-indicator.error {
+  background-color: #dc3545;
+}
+
+/* =============================================================================
+   MACHINE POPUP
+   ============================================================================= */
+
+.machine-popup {
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.machine-name {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.machine-details {
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label {
+  font-weight: bold;
+  margin-right: 0.5rem;
+  color: #495057;
+  min-width: 120px;
+}
+
+.detail-value {
+  color: #2c3e50;
+  font-family: monospace;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.data-item {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.system-info-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.system-info-title {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.disk-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.disk-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.disk-item:last-child {
+  margin-bottom: 0;
+}
+
+/* =============================================================================
+   ANALYTICS PANEL
+   ============================================================================= */
+
+.analytics-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+.panel-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e9ecef;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.panel-header:hover {
+  background: #f8f9fa;
+}
+
+.panel-content {
+  padding: 1rem;
+}
+
+.panel-content.closed {
+  display: none;
+}
+
+.filter-section {
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background: white;
+}
+
+.metric-card {
+  background: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.metric-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.metric-value {
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+/* =============================================================================
+   STYLE SWITCHER
+   ============================================================================= */
+
+.style-switcher {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 200px;
+}
+
+.style-switcher-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  font-weight: 600;
+}
+
+.style-switcher-header:hover {
+  background: #f8fafc;
+}
+
+.style-switcher-content {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.style-switcher-content.closed {
+  display: none;
+}
+
+.style-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.style-button:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+  color: #1e40af;
+}
+
+.style-button.active {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.style-label {
+  font-weight: 600;
+  color: #374151;
+  margin-right: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.style-toggle-icon {
+  transition: transform 0.3s ease;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.style-toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+/* =============================================================================
+   ALERT FLASH EFFECT
+   ============================================================================= */
+
+.alert-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 9999;
+  transition: background 0.1s ease;
+}
+
+.alert-flash.flashing {
+  animation: strobe 1s ease-in-out;
+}
+
+.alert-flash.flashing.red {
+  background: rgba(255, 0, 0, 0.3);
+}
+
+.alert-flash.flashing.green {
+  background: rgba(0, 255, 0, 0.3);
+}
+
+@keyframes strobe {
+  0%, 100% { background: rgba(255, 0, 0, 0.3); }
+  25% { background: rgba(255, 0, 0, 0.1); }
+  50% { background: rgba(255, 0, 0, 0.5); }
+  75% { background: rgba(255, 0, 0, 0.1); }
+}
+
+/* =============================================================================
+   CUSTOM MARKERS AND PULSING EFFECTS
+   ============================================================================= */
+
+/* Ensure all pulsing markers appear above all other markers */
+.custom-marker.pulse-red,
+.custom-marker.pulse-green {
+  z-index: 99999 !important;
+  position: relative;
+}
+
+/* Pulsing red border animation for alert markers - 30 seconds then returns to normal */
+@keyframes pulse-red-30s {
+  0%, 90% { 
+    border: 3px solid rgba(255, 0, 0, 0.8);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+  }
+  5%, 15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% { 
+    border: 6px solid rgba(255, 0, 0, 1);
+    box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
+  }
+  95%, 100% { 
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+}
+
+/* Individual pulsing animation for newly changed machines */
+@keyframes pulse-individual {
+  0%, 100% { 
+    border: 3px solid rgba(255, 0, 0, 0.8);
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+    z-index: 99999 !important;
+  }
+  50% { 
+    border: 6px solid rgba(255, 0, 0, 1);
+    box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
+    z-index: 99999 !important;
+  }
+}
+
+/* Green pulsing animation for recoveries */
+@keyframes pulse-green {
+  0%, 100% { 
+    border: 3px solid rgba(0, 255, 0, 0.8);
+    box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+    z-index: 99999 !important;
+  }
+  50% { 
+    border: 6px solid rgba(0, 255, 0, 1);
+    box-shadow: 0 0 0 12px rgba(0, 255, 0, 0.4);
+    z-index: 99999 !important;
+  }
+}
+
+/* =============================================================================
+   DARK THEME - GLOWY GREEN NEON
+   ============================================================================= */
+
+.dark-theme {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  color: #ffffff;
+}
+
+.dark-theme .status-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dark-theme .analytics-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dark-theme .panel-header {
+  color: #2c3e50;
+  border-bottom-color: #e9ecef;
+}
+
+.dark-theme .panel-header:hover {
+  background: #f8f9fa;
+}
+
+.dark-theme .filter-select {
+  background: white;
+  color: #2c3e50;
+  border: 1px solid #ced4da;
+}
+
+.dark-theme .filter-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.dark-theme .metric-card {
+  background: #f8f9fa;
+  color: #2c3e50;
+  border: none;
+  box-shadow: none;
+}
+
+.dark-theme .machine-popup {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dark-theme .machine-name {
+  color: #2c3e50;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.dark-theme .detail-label {
+  color: #495057;
+  font-weight: bold;
+}
+
+.dark-theme .detail-value {
+  color: #2c3e50;
+}
+
+.dark-theme .data-item {
+  background: #f8f9fa;
+  color: #2c3e50;
+  border: none;
+  box-shadow: none;
+}
+
+.dark-theme .disk-info {
+  background: #f8f9fa;
+  color: #2c3e50;
+  border: none;
+}
+
+.dark-theme .style-switcher {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dark-theme .style-button {
+  background: #ffffff;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.dark-theme .style-button:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.dark-theme .style-button.active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* Neon glow effects for status indicators */
+.dark-theme .status-indicator.green {
+  background: #00ff88;
+  box-shadow: 0 0 10px #00ff8844, 0 0 20px #00ff8844, 0 0 30px #00ff8844;
+}
+
+.dark-theme .status-indicator.yellow {
+  background: #ffaa00;
+  box-shadow: 0 0 10px #ffaa0044, 0 0 20px #ffaa0044, 0 0 30px #ffaa0044;
+}
+
+.dark-theme .status-indicator.red {
+  background: #ff4444;
+  box-shadow: 0 0 10px #ff444444, 0 0 20px #ff444444, 0 0 30px #ff444444;
+}
+
+.dark-theme .status-indicator.grey {
+  background: #888888;
+  box-shadow: 0 0 10px #88888844, 0 0 20px #88888844, 0 0 30px #88888844;
+}
+
+.dark-theme .status-indicator.black {
+  background: #000000;
+  box-shadow: 0 0 10px #00000044, 0 0 20px #00000044, 0 0 30px #00000044;
+}
+
+/* Enhanced pulsing animations for neon theme */
+.dark-theme .custom-marker {
+  animation: neon-pulse 2s infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% { 
+    filter: brightness(1);
+    box-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor;
+  }
+  50% { 
+    filter: brightness(1.2);
+    box-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 0 0 90px currentColor;
+  }
+}
+
+/* =============================================================================
+   MINIMAL THEME
+   ============================================================================= */
+
+.minimal-theme {
+  background: #fafafa;
+  color: #333;
+}
+
+.minimal-theme .status-panel {
+  background: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.minimal-theme .analytics-panel {
+  background: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.minimal-theme .machine-popup {
+  background: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.minimal-theme .style-switcher {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* =============================================================================
+   INDUSTRIAL THEME
+   ============================================================================= */
+
+.industrial-theme {
+  background: #1a1a1a;
+  color: #ffaa00;
+}
+
+.industrial-theme .status-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.industrial-theme .analytics-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.industrial-theme .machine-popup {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.industrial-theme .machine-name {
+  color: #2c3e50;
+  text-shadow: none;
+}
+
+.industrial-theme .detail-label {
+  color: #495057;
+  font-weight: bold;
+}
+
+.industrial-theme .style-switcher {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.industrial-theme .style-button {
+  background: #ffffff;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.industrial-theme .style-button:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.industrial-theme .style-button.active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* =============================================================================
+   MODERN THEME
+   ============================================================================= */
+
+.modern-theme {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+}
+
+.modern-theme .status-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.modern-theme .analytics-panel {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.modern-theme .machine-popup {
+  background: white;
+  color: #2c3e50;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.modern-theme .machine-name {
+  color: #2c3e50;
+  text-shadow: none;
+}
+
+.modern-theme .detail-label {
+  color: #495057;
+  font-weight: bold;
+}
+
+.modern-theme .detail-value {
+  color: #2c3e50;
+}
+
+.modern-theme .style-switcher {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modern-theme .style-button {
+  background: #ffffff;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.modern-theme .style-button:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.modern-theme .style-button.active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* =============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .analytics-panel {
+    min-width: 250px;
+    max-width: 280px;
+  }
+  
+  .status-panel {
+    min-width: 180px;
+  }
+  
+  .style-switcher {
+    min-width: 180px;
+  }
+  
+  .machine-popup {
+    min-width: 250px;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-panel {
+    position: relative;
+    margin: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .status-panel {
+    position: relative;
+    margin: 10px;
+    min-width: auto;
+  }
+  
+  .style-switcher {
+    position: relative;
+    margin: 10px auto;
+    transform: none;
+    min-width: auto;
+  }
+}

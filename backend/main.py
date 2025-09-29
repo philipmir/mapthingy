@@ -761,39 +761,39 @@ async def simulate_machine_updates():
     2. Real machine data polling
     3. Real status update handling
     """
-    # First, ensure all machines start as online
+    # First, ensure all machines start as green (active with no alarms)
     for machine in SAMPLE_MACHINES:
-        machine["status"] = "online"
+        machine["status"] = "green"
         machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
         machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
         machine["data"]["speed"] = random.randint(1000, 1800)
         machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
     
-    print("SIMULATION: All machines set to online status")
+    print("SIMULATION: All machines set to green status (active with no alarms)")
     
     while True:
         await asyncio.sleep(15)  # Update every 15 seconds
         
         # Find machines that are currently in alert status
-        alert_machines = [m for m in SAMPLE_MACHINES if m["status"] in ["warning", "offline", "error"]]
+        alert_machines = [m for m in SAMPLE_MACHINES if m["status"] in ["yellow", "red", "black", "grey"]]
         
-        # If there are alert machines, reset them to online (green recovery)
+        # If there are alert machines, reset them to green (active with no alarms)
         if alert_machines:
             for machine in alert_machines:
                 old_status = machine["status"]
-                machine["status"] = "online"
+                machine["status"] = "green"
                 machine["data"]["temperature"] = round(random.uniform(35, 50), 1)
                 machine["data"]["pressure"] = round(random.uniform(1.5, 2.5), 1)
                 machine["data"]["speed"] = random.randint(1000, 1800)
                 machine["data"]["disk_volume"] = round(random.uniform(60, 95), 1)
                 machine["last_seen"] = datetime.now()
-                print(f"SIMULATION: Machine {machine['name']} recovered from {old_status} to online")
+                print(f"SIMULATION: Machine {machine['name']} recovered from {old_status} to green")
                 
                 # Broadcast recovery update
                 update_message = {
                     "type": "machine_update",
                     "machine_id": machine["id"],
-                    "status": "online",
+                    "status": "green",
                     "data": machine["data"],
                     "timestamp": machine["last_seen"].isoformat()
                 }
@@ -807,26 +807,33 @@ async def simulate_machine_updates():
             machine = random.choice(SAMPLE_MACHINES)
             old_status = machine["status"]
             
-            # Only change to alert status (not back to online)
-            alert_statuses = ["warning", "offline", "error"]
-            new_status = random.choice(alert_statuses)
+            # Only change to alert status (not back to green)
+            # Use specification-compliant status values with weighted probability
+            alert_statuses = ["yellow", "red", "black", "grey"]
+            # Weight the probabilities: yellow (40%), red (30%), black (20%), grey (10%)
+            new_status = random.choices(alert_statuses, weights=[40, 30, 20, 10])[0]
             
             machine["status"] = new_status
             machine["last_seen"] = datetime.now()
             print(f"SIMULATION: Machine {machine['name']} changed from {old_status} to {new_status}")
             
             # Update data values based on new status - SIMULATION DATA
-            if new_status == "warning":
+            if new_status == "yellow":  # Active with warnings
                 machine["data"]["temperature"] = round(random.uniform(50, 65), 1)
                 machine["data"]["pressure"] = round(random.uniform(2.5, 3.5), 1)
                 machine["data"]["speed"] = random.randint(500, 1200)
                 machine["data"]["disk_volume"] = round(random.uniform(20, 60), 1)
-            elif new_status == "error":
+            elif new_status == "red":  # Active with errors
                 machine["data"]["temperature"] = round(random.uniform(70, 85), 1)  # Very high temperature
                 machine["data"]["pressure"] = round(random.uniform(4.0, 5.5), 1)  # Very high pressure
                 machine["data"]["speed"] = random.randint(200, 800)  # Low speed
                 machine["data"]["disk_volume"] = round(random.uniform(5, 25), 1)  # Very low disk space
-            else:  # offline
+            elif new_status == "black":  # System not accessible
+                machine["data"]["temperature"] = 0
+                machine["data"]["pressure"] = 0
+                machine["data"]["speed"] = 0
+                machine["data"]["disk_volume"] = 0
+            else:  # grey - Not connected to SOSON
                 machine["data"]["temperature"] = 0
                 machine["data"]["pressure"] = 0
                 machine["data"]["speed"] = 0

@@ -10,8 +10,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import axios from 'axios';
-import styled from 'styled-components';
 import 'leaflet/dist/leaflet.css';
+import './styles.css';
 
 // Import different map designs
 import App from './App';
@@ -27,7 +27,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-// Function to arrange markers in country boxes
+// Function to arrange markers in country boxes - same as default App.js
 const arrangeMarkersInCountryBoxes = (machines) => {
   const arranged = [];
   
@@ -94,61 +94,76 @@ const arrangeMarkersInCountryBoxes = (machines) => {
   return arranged;
 };
 
-// Minimalist custom machine status icons
+// Create minimal custom icons for different machine statuses
 const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   let color;
-  let shape = 'circle';
-  let size = 16;
+  let shape = 'circle'; // Default shape
+  let size = 16; // Smaller for minimal look
   
-  // Set color based on status - muted colors
+  // Set color based on status - muted colors for minimal theme
   switch (status) {
-    case 'online':
-      color = '#4ade80';
+    case 'grey': // Not connected to SOSON
+      color = '#95a5a6';
       break;
-    case 'warning':
-      color = '#fbbf24';
+    case 'black': // System not accessible
+      color = '#34495e';
       break;
-    case 'offline':
-      color = '#f87171';
+    case 'green': // Active with no alarms
+      color = '#27ae60';
       break;
-    case 'error':
-      color = '#a78bfa';
+    case 'yellow': // Active with warnings
+      color = '#f39c12';
+      break;
+    case 'red': // Active with errors
+      color = '#e74c3c';
+      break;
+    case 'online': // Legacy support - map to green
+      color = '#27ae60';
+      break;
+    case 'warning': // Legacy support - map to yellow
+      color = '#f39c12';
+      break;
+    case 'offline': // Legacy support - map to black
+      color = '#34495e';
+      break;
+    case 'error': // Legacy support - map to red
+      color = '#e74c3c';
       break;
     default:
-      color = '#9ca3af';
+      color = '#95a5a6'; // Default to grey
   }
   
-  // Set shape and size based on system type
-  if (systemType === 'Automated System 4000') {
-    shape = 'circle';
-    size = 20; // Slightly larger for AS4000
-  } else if (systemType === 'Mini-System 4000') {
+  // Set shape based on system type - simple shapes for minimal
+  if (systemType === 'Mini-System 4000') {
     shape = 'square';
-    size = 16; // Smaller square for MS4000
+    size = 14;
+  } else if (systemType === 'Industrial System') {
+    shape = 'diamond';
+    size = 18;
   }
+  
+  // Determine if this machine should pulse - subtle for minimal
+  const shouldPulse = recentlyChanged;
+  const pulseClass = shouldPulse ? 'pulse-red' : '';
+  const pulseColor = shouldPulse ? 'rgba(231, 76, 60, 0.6)' : '#ecf0f1';
+  const pulseAnimation = shouldPulse ? 'pulse-individual' : '';
+  
+  // Set border radius based on shape
+  let borderRadius = '50%'; // Default circle
+  if (shape === 'square') {
+    borderRadius = '2px'; // Very subtle rounding
+  } else if (shape === 'diamond') {
+    borderRadius = '0px';
+  }
+  
+  const borderWidth = shouldPulse ? '2px' : '1px';
 
-  const borderRadius = shape === 'circle' ? '50%' : '2px';
-  const borderWidth = systemType === 'Automated System 4000' ? '4px' : '3px';
-  
-  // Check if this is an alert status that should flash
-  const alertStatuses = ['warning', 'offline', 'error'];
-  const isAlertStatus = alertStatuses.includes(status);
-  const isOnlineStatus = status === 'online';
-  
-  // Create pulsing border for recently changed machines
-  const shouldPulseRed = isAlertStatus && recentlyChanged;
-  const shouldPulseGreen = isOnlineStatus && recentlyChanged;
-  const shouldPulse = shouldPulseRed || shouldPulseGreen;
-  
-           const pulseClass = shouldPulse ? (shouldPulseRed ? 'pulse-red' : 'pulse-green') : '';
-           const pulseColor = shouldPulseRed ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
-           const pulseAnimation = shouldPulseRed ? 'pulse-individual' : 'pulse-green';
-           const pulseStyle = shouldPulse ? `
-             border: ${borderWidth} solid ${pulseColor} !important;
-             animation: ${pulseAnimation} 1s ease-in-out infinite;
-             z-index: 9999 !important;
-             position: relative;
-           ` : '';
+  const pulseStyle = shouldPulse ? `
+    border: ${borderWidth} solid ${pulseColor} !important;
+    animation: ${pulseAnimation} 1s ease-in-out infinite;
+    z-index: 99999 !important;
+    position: relative;
+  ` : '';
 
   return L.divIcon({
     className: `custom-marker ${pulseClass}`,
@@ -157,8 +172,8 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
       width: ${size}px;
       height: ${size}px;
       border-radius: ${borderRadius};
-      border: 2px solid #ffffff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: ${borderWidth} solid #ecf0f1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -169,363 +184,20 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   });
 };
 
-// Minimalist styled components
-const AppContainer = styled.div`
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  background: #fafafa;
-  color: #374151;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  border: none;
-  
-  /* Hide scrollbars */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  
-  &::-webkit-scrollbar {
-    display: none; /* WebKit */
-  }
-  
-  /* Pulsing red border animation for alert markers - 30 seconds then returns to normal */
-  @keyframes pulse-red-30s {
-    0%, 90% { 
-      border: 3px solid rgba(255, 0, 0, 0.8);
-      box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-    }
-    5%, 15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% { 
-      border: 6px solid rgba(255, 0, 0, 1);
-      box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
-    }
-    95%, 100% { 
-      border: 3px solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-  }
-  
-           /* Individual pulsing animation for newly changed machines */
-           @keyframes pulse-individual {
-             0%, 100% { 
-               border: 3px solid rgba(255, 0, 0, 0.8);
-               box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-               z-index: 9999;
-             }
-             50% { 
-               border: 6px solid rgba(255, 0, 0, 1);
-               box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
-               z-index: 9999;
-             }
-           }
-           
-           /* Green pulsing animation for recoveries */
-           @keyframes pulse-green {
-             0%, 100% { 
-               border: 3px solid rgba(0, 255, 0, 0.8);
-               box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
-               z-index: 9999;
-             }
-             50% { 
-               border: 6px solid rgba(0, 255, 0, 1);
-               box-shadow: 0 0 0 12px rgba(0, 255, 0, 0.4);
-               z-index: 9999;
-             }
-           }
-`;
-
-const MapWrapper = styled.div`
-  flex: 1;
-  position: relative;
-  background: #ffffff;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-`;
-
-const StatusPanel = styled.div`
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  z-index: 1000;
-  min-width: 200px;
-  border: 1px solid #e5e7eb;
-`;
-
-const StatusItem = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const StatusIndicator = styled.div`
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 0.75rem;
-  background-color: ${props => {
-    switch (props.$status) {
-      case 'online': return '#4ade80';
-      case 'warning': return '#fbbf24';
-      case 'offline': return '#f87171';
-      case 'error': return '#a78bfa';
-      default: return '#9ca3af';
-    }
-  }};
-`;
-
-const MachinePopup = styled.div`
-  min-width: 250px;
-  background: #ffffff;
-  color: #374151;
-  border-radius: 6px;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-`;
-
-const MachineName = styled.h3`
-  margin: 0 0 0.75rem 0;
-  color: #111827;
-  font-weight: 500;
-  font-size: 1.1rem;
-`;
-
-const MachineDetails = styled.div`
-  margin-bottom: 0.5rem;
-  color: #6b7280;
-  font-size: 0.9rem;
-`;
-
-const DetailLabel = styled.span`
-  font-weight: 500;
-  margin-right: 0.5rem;
-  color: #374151;
-`;
-
-const DataGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-`;
-
-const DataItem = styled.div`
-  background: #f9fafb;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  text-align: center;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-`;
-
-// Analytics Dashboard Components
-const AnalyticsPanel = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  z-index: 1000;
-  min-width: 280px;
-  max-width: 320px;
-  border: 1px solid #e5e7eb;
-`;
-
-const PanelHeader = styled.div`
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 500;
-  color: #374151;
-  
-  &:hover {
-    background: #f9fafb;
-  }
-`;
-
-const PanelContent = styled.div`
-  padding: 1.25rem;
-  display: ${props => props.$isOpen ? 'block' : 'none'};
-`;
-
-const FilterSection = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const FilterLabel = styled.label`
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-`;
-
-const FilterSelect = styled.select`
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  background: #ffffff;
-  color: #374151;
-  
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-`;
-
-const MetricCard = styled.div`
-  background: #f9fafb;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 0.75rem;
-  font-size: 0.8rem;
-  border: 1px solid #e5e7eb;
-`;
-
-const MetricLabel = styled.div`
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-`;
-
-const MetricValue = styled.div`
-  color: #111827;
-  font-size: 1rem;
-  font-weight: 600;
-`;
-
-const ToggleIcon = styled.span`
-  transition: transform 0.2s ease;
-  transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-  color: #6b7280;
-`;
-
-// Style Switcher Components
-const StyleSwitcher = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  border: 1px solid #e5e7eb;
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-width: 200px;
-`;
-
-const StyleSwitcherHeader = styled.div`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  
-  &:hover {
-    background: #f9fafb;
-  }
-`;
-
-const StyleSwitcherContent = styled.div`
-  display: ${props => props.$isOpen ? 'flex' : 'none'};
-  gap: 0.5rem;
-  margin-left: 0.5rem;
-  flex-wrap: wrap;
-`;
-
-const StyleButton = styled.button`
-  padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.$isActive ? '#3b82f6' : '#d1d5db'};
-  border-radius: 4px;
-  background: ${props => props.$isActive ? '#dbeafe' : '#ffffff'};
-  color: ${props => props.$isActive ? '#1e40af' : '#64748b'};
-  font-weight: ${props => props.$isActive ? '600' : '500'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  
-  &:hover {
-    border-color: #3b82f6;
-    background: #f8fafc;
-    color: #1e40af;
-  }
-`;
-
-const StyleLabel = styled.span`
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.9rem;
-  margin-right: 0.5rem;
-`;
-
-const StyleToggleIcon = styled.span`
-  transition: transform 0.2s ease;
-  transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-  color: #6b7280;
-  font-weight: 600;
-  margin-left: 0.5rem;
-`;
-
-// Alert Flash Effect
-const AlertFlash = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${props => props.$isFlashing ? (props.$flashColor === 'green' ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)') : 'transparent'};
-  pointer-events: none;
-  z-index: 9999;
-  transition: background 0.1s ease;
-  animation: ${props => props.$isFlashing ? 'strobe 1s ease-in-out' : 'none'};
-  
-  @keyframes strobe {
-    0%, 100% { background: rgba(255, 0, 0, 0.3); }
-    25% { background: rgba(255, 0, 0, 0.1); }
-    50% { background: rgba(255, 0, 0, 0.5); }
-    75% { background: rgba(255, 0, 0, 0.1); }
-  }
-`;
+// All styled components are now handled by CSS classes in styles.css
 
 // Component to auto-fit map to show all markers
 function AutoFitBounds({ machines }) {
   const map = useMap();
   
   useEffect(() => {
-    if (machines.length > 0) {
-      const allPositions = machines.map(machine => [machine.latitude, machine.longitude]);
-      
-      const group = new L.featureGroup();
-      allPositions.forEach(pos => {
-        group.addLayer(L.marker(pos));
-      });
-      
-      map.fitBounds(group.getBounds().pad(0.1)); // 10% padding around markers
+    if (machines && machines.length > 0) {
+      const bounds = L.latLngBounds(
+        machines.map(machine => [machine.latitude, machine.longitude])
+      );
+      map.fitBounds(bounds, { padding: [20, 20] });
     }
-  }, [machines, map]);
+  }, [map, machines]);
   
   return null;
 }
@@ -537,58 +209,54 @@ function AppMinimal() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [systemFilter, setSystemFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
-  const [styleSwitcherOpen, setStyleSwitcherOpen] = useState(false);
-  const [currentStyle, setCurrentStyle] = useState('minimal');
   const [alertFlash, setAlertFlash] = useState(false);
   const [flashColor, setFlashColor] = useState('red');
-  const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [recentlyChangedMachines, setRecentlyChangedMachines] = useState(new Set());
+  const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [machinePreviousStatus, setMachinePreviousStatus] = useState(new Map());
   const [lastFlashTime, setLastFlashTime] = useState(0);
+  const [styleSwitcherOpen, setStyleSwitcherOpen] = useState(false);
+  const [currentStyle, setCurrentStyle] = useState('minimal');
 
-  // Style definitions
+  // Style options
   const styles = [
-    { id: 'original', name: 'Original', component: App },
+    { id: 'default', name: 'Default', component: App },
     { id: 'dark', name: 'Dark', component: AppDark },
-    { id: 'minimal', name: 'Minimal', component: null },
+    { id: 'minimal', name: 'Minimal', component: AppMinimal },
     { id: 'industrial', name: 'Industrial', component: AppIndustrial },
     { id: 'modern', name: 'Modern', component: AppModern }
   ];
 
-  // Load initial machine data
-  useEffect(() => {
-    const fetchMachines = async () => {
-      try {
-        console.log('Fetching machines from API...');
-        const response = await axios.get('/api/machines');
-        console.log('API Response:', response.data);
-        setMachines(response.data);
-      } catch (error) {
-        console.error('Failed to fetch machines:', error);
-      }
-    };
-
-    fetchMachines();
-  }, []);
+  const CurrentStyleComponent = styles.find(style => style.id === currentStyle)?.component;
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    const newSocket = io('ws://127.0.0.1:8000/ws');
+    const newSocket = new WebSocket('ws://127.0.0.1:8000/ws');
     
-    newSocket.on('connect', () => {
+    newSocket.onopen = () => {
       setConnectionStatus('Connected');
       console.log('Connected to server');
-    });
+    };
 
-    newSocket.on('disconnect', () => {
+    newSocket.onclose = () => {
       setConnectionStatus('Disconnected');
       console.log('Disconnected from server');
-    });
+    };
 
-    newSocket.on('message', (data) => {
+    newSocket.onmessage = (event) => {
       try {
-        const message = JSON.parse(data);
+        const message = JSON.parse(event.data);
+        console.log('RECEIVED:', message);
         if (message.type === 'machine_update') {
+          console.log(`UPDATING: Machine ${message.machine_id} to ${message.status}`);
+          
+          // Track previous status for this machine
+          setMachinePreviousStatus(prev => {
+            const newMap = new Map(prev);
+            newMap.set(message.machine_id, message.status);
+            return newMap;
+          });
+          
           // Track this machine as recently changed for pulsing animation
           setRecentlyChangedMachines(prev => new Set([...prev, message.machine_id]));
           
@@ -617,117 +285,72 @@ function AppMinimal() {
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
-    });
-
+    };
+    
     return () => {
       newSocket.close();
     };
   }, []);
 
+  // Fetch initial data
+  useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/machines');
+        setMachines(response.data);
+        setConnectionStatus('Connected');
+      } catch (error) {
+        console.error('Error fetching machines:', error);
+        setConnectionStatus('Error');
+      }
+    };
+    
+    fetchMachines();
+  }, []);
+
   // Filter machines based on selected filters
   const filteredMachines = useMemo(() => {
-    return machines.filter(machine => {
-      const statusMatch = statusFilter === 'all' || machine.status === statusFilter;
-      const systemMatch = systemFilter === 'all' || machine.system_type === systemFilter;
-      const countryMatch = countryFilter === 'all' || machine.location === countryFilter;
-      return statusMatch && systemMatch && countryMatch;
-    });
+    let filtered = machines;
+    
+    if (statusFilter !== 'all') {
+      // Map legacy status values to specification-compliant ones for filtering
+      const statusMap = {
+        'online': 'green',
+        'warning': 'yellow', 
+        'offline': 'black',
+        'error': 'red'
+      };
+      
+      filtered = filtered.filter(machine => {
+        const machineStatus = statusMap[machine.status] || machine.status;
+        return machineStatus === statusFilter;
+      });
+    }
+    
+    if (systemFilter !== 'all') {
+      filtered = filtered.filter(machine => machine.system_type === systemFilter);
+    }
+    
+    if (countryFilter !== 'all') {
+      filtered = filtered.filter(machine => machine.location === countryFilter);
+    }
+    
+    return filtered;
   }, [machines, statusFilter, systemFilter, countryFilter]);
 
-  // Calculate status counts for filtered machines
-  const statusCounts = filteredMachines.reduce((acc, machine) => {
-    acc[machine.status] = (acc[machine.status] || 0) + 1;
-    return acc;
-  }, {});
+  // Arrange filtered machines in country boxes
+  const arrangedMachines = useMemo(() => {
+    return arrangeMarkersInCountryBoxes(filteredMachines);
+  }, [filteredMachines]);
 
-  // Calculate analytics metrics
-  const analytics = useMemo(() => {
-    const total = filteredMachines.length;
-    const online = statusCounts.online || 0;
-    const warning = statusCounts.warning || 0;
-    const offline = statusCounts.offline || 0;
-    const error = statusCounts.error || 0;
-    
-    const avgTemp = filteredMachines.length > 0 
-      ? (filteredMachines.reduce((sum, m) => sum + (m.data?.temperature || 0), 0) / filteredMachines.length).toFixed(1)
-      : 0;
-    
-    const avgPressure = filteredMachines.length > 0
-      ? (filteredMachines.reduce((sum, m) => sum + (m.data?.pressure || 0), 0) / filteredMachines.length).toFixed(1)
-      : 0;
-    
-    const avgSpeed = filteredMachines.length > 0
-      ? Math.round(filteredMachines.reduce((sum, m) => sum + (m.data?.speed || 0), 0) / filteredMachines.length)
-      : 0;
-
-    const avgDiskVolume = filteredMachines.length > 0
-      ? (filteredMachines.reduce((sum, m) => sum + (m.data?.disk_volume || 0), 0) / filteredMachines.length).toFixed(1)
-      : 0;
-
-    return {
-      total,
-      online,
-      warning,
-      offline,
-      error,
-      avgTemp,
-      avgPressure,
-      avgSpeed,
-      avgDiskVolume,
-      uptime: total > 0 ? ((online / total) * 100).toFixed(1) : 0
-    };
-  }, [filteredMachines, statusCounts]);
-
-  // Get unique values for filter options
-  const uniqueCountries = [...new Set(machines.map(m => m.location))].sort();
-  const uniqueSystems = [...new Set(machines.map(m => m.system_type))].filter(Boolean);
-
-  // Arrange markers in country boxes
-  const arrangedMachines = arrangeMarkersInCountryBoxes(filteredMachines);
-
-  // Alert detection and auto-popup logic
+  // Flash effect when machines change status - SPECIFICATION COMPLIANT
   useEffect(() => {
-    const alertStatuses = ['warning', 'offline', 'error'];
-    const machinesNeedingAlert = arrangedMachines.filter(machine => 
-      alertStatuses.includes(machine.status) && !alertedMachines.has(machine.id)
-    );
-
-    if (machinesNeedingAlert.length > 0) {
-      // Trigger flash effect
-      setFlashColor('red');
-      setAlertFlash(true);
-      setTimeout(() => setAlertFlash(false), 2000);
-
-      // Add machines to alerted set
-      setAlertedMachines(prev => new Set([...prev, ...machinesNeedingAlert.map(m => m.id)]));
-
-      // Auto-open popups for alert machines
-      machinesNeedingAlert.forEach(machine => {
-        console.log(`🚨 ALERT: ${machine.name} is ${machine.status.toUpperCase()}!`);
-      });
-    }
-
-    // Reset alerted machines when status improves
-    const improvedMachines = arrangedMachines.filter(machine => 
-      !alertStatuses.includes(machine.status) && alertedMachines.has(machine.id)
-    );
-    if (improvedMachines.length > 0) {
-      setAlertedMachines(prev => {
-        const newSet = new Set(prev);
-        improvedMachines.forEach(machine => newSet.delete(machine.id));
-        return newSet;
-      });
-    }
-  }, [arrangedMachines, alertedMachines]);
-
-  // Flash effect when machines change status
-  useEffect(() => {
-    const alertStatuses = ['warning', 'offline', 'error'];
+    const alertStatuses = ['yellow', 'red', 'black', 'grey'];
     const newlyChangedToAlert = arrangedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && recentlyChangedMachines.has(machine.id)
     );
     const newlyReturnedToOnline = arrangedMachines.filter(machine => 
-      machine.status === 'online' && recentlyChangedMachines.has(machine.id)
+      machine.status === 'green' && recentlyChangedMachines.has(machine.id)
     );
 
     // Only trigger flash if there are changes - prioritize green for recoveries
@@ -751,61 +374,131 @@ function AppMinimal() {
     }
   }, [recentlyChangedMachines, arrangedMachines]);
 
-  // Get current style component
-  const CurrentStyleComponent = styles.find(s => s.id === currentStyle)?.component;
+  // Calculate analytics
+  const analytics = useMemo(() => {
+    const total = machines.length;
+    const statusCounts = machines.reduce((acc, machine) => {
+      // Map legacy status values to specification-compliant ones
+      const statusMap = {
+        'online': 'green',
+        'warning': 'yellow',
+        'offline': 'black', 
+        'error': 'red'
+      };
+      const status = statusMap[machine.status] || machine.status;
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const onlineCount = statusCounts.green || 0;
+    const uptime = total > 0 ? Math.round((onlineCount / total) * 100) : 0;
+    
+    const avgTemp = machines.length > 0 
+      ? Math.round(machines.reduce((sum, m) => sum + (m.data?.temperature || 0), 0) / machines.length)
+      : 0;
+    
+    const avgPressure = machines.length > 0 
+      ? Math.round(machines.reduce((sum, m) => sum + (m.data?.pressure || 0), 0) / machines.length * 10) / 10
+      : 0;
+    
+    const avgSpeed = machines.length > 0 
+      ? Math.round(machines.reduce((sum, m) => sum + (m.data?.speed || 0), 0) / machines.length)
+      : 0;
+    
+    const avgDiskVolume = machines.length > 0 
+      ? Math.round(machines.reduce((sum, m) => sum + (m.data?.disk_volume || 0), 0) / machines.length * 10) / 10
+      : 0;
+    
+    return {
+      total,
+      uptime,
+      avgTemp,
+      avgPressure,
+      avgSpeed,
+      avgDiskVolume
+    };
+  }, [machines]);
+
+  // Get unique systems and countries for filters
+  const uniqueSystems = useMemo(() => {
+    return [...new Set(machines.map(m => m.system_type))].filter(Boolean);
+  }, [machines]);
+  
+  const uniqueCountries = useMemo(() => {
+    return [...new Set(machines.map(m => m.location))].filter(Boolean);
+  }, [machines]);
+
+  // Status counts for display
+  const statusCounts = useMemo(() => {
+    return machines.reduce((acc, machine) => {
+      // Map legacy status values to specification-compliant ones
+      const statusMap = {
+        'online': 'green',
+        'warning': 'yellow',
+        'offline': 'black',
+        'error': 'red'
+      };
+      const status = statusMap[machine.status] || machine.status;
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+  }, [machines]);
 
   // If a different style is selected, render that component
-  if (CurrentStyleComponent) {
+  if (CurrentStyleComponent && currentStyle !== 'minimal') {
     return <CurrentStyleComponent />;
   }
 
   return (
-    <AppContainer>
-      <AlertFlash $isFlashing={alertFlash} $flashColor={flashColor} />
-      <MapWrapper>
+    <div className="app-container minimal-theme">
+      <div className={`alert-flash ${alertFlash ? 'flashing' : ''} ${flashColor}`} />
+      <div className="map-wrapper">
         {/* Style Switcher */}
-        <StyleSwitcher>
-          <StyleSwitcherHeader onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
-            <StyleLabel>Style:</StyleLabel>
-            <StyleToggleIcon $isOpen={styleSwitcherOpen}>▼</StyleToggleIcon>
-          </StyleSwitcherHeader>
-          <StyleSwitcherContent $isOpen={styleSwitcherOpen}>
+        <div className="style-switcher">
+          <div className="style-switcher-header" onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
+            <span className="style-label">Style:</span>
+            <span className={`style-toggle-icon ${styleSwitcherOpen ? 'open' : ''}`}>▼</span>
+          </div>
+          <div className={`style-switcher-content ${styleSwitcherOpen ? '' : 'closed'}`}>
             {styles.map(style => (
-              <StyleButton
+              <button
                 key={style.id}
-                $isActive={currentStyle === style.id}
+                className={`style-button ${currentStyle === style.id ? 'active' : ''}`}
                 onClick={() => setCurrentStyle(style.id)}
               >
                 {style.name}
-              </StyleButton>
+              </button>
             ))}
-          </StyleSwitcherContent>
-        </StyleSwitcher>
+          </div>
+        </div>
 
         {/* Analytics Dashboard */}
-        <AnalyticsPanel>
-          <PanelHeader onClick={() => setAnalyticsOpen(!analyticsOpen)}>
-            <span>Analytics & Filters</span>
-            <ToggleIcon $isOpen={analyticsOpen}>▼</ToggleIcon>
-          </PanelHeader>
-          <PanelContent $isOpen={analyticsOpen}>
-            <FilterSection>
-              <FilterLabel>Status Filter</FilterLabel>
-              <FilterSelect 
+        <div className="analytics-panel">
+          <div className="panel-header" onClick={() => setAnalyticsOpen(!analyticsOpen)}>
+            <span>📊 Analytics & Filters</span>
+            <span className={`toggle-icon ${analyticsOpen ? 'open' : ''}`}>▼</span>
+          </div>
+          <div className={`panel-content ${analyticsOpen ? '' : 'closed'}`}>
+            <div className="filter-section">
+              <label className="filter-label">Status Filter</label>
+              <select 
+                className="filter-select"
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="online">Online</option>
-                <option value="warning">Warning</option>
-                <option value="offline">Offline</option>
-                <option value="error">Error</option>
-              </FilterSelect>
-            </FilterSection>
+                <option value="grey">Not Connected</option>
+                <option value="black">Not Accessible</option>
+                <option value="green">Active (No Alarms)</option>
+                <option value="yellow">Active (Warnings)</option>
+                <option value="red">Active (Errors)</option>
+              </select>
+            </div>
             
-            <FilterSection>
-              <FilterLabel>System Type</FilterLabel>
-              <FilterSelect 
+            <div className="filter-section">
+              <label className="filter-label">System Type</label>
+              <select 
+                className="filter-select"
                 value={systemFilter} 
                 onChange={(e) => setSystemFilter(e.target.value)}
               >
@@ -813,12 +506,13 @@ function AppMinimal() {
                 {uniqueSystems.map(system => (
                   <option key={system} value={system}>{system}</option>
                 ))}
-              </FilterSelect>
-            </FilterSection>
+              </select>
+            </div>
             
-            <FilterSection>
-              <FilterLabel>Country</FilterLabel>
-              <FilterSelect 
+            <div className="filter-section">
+              <label className="filter-label">Country</label>
+              <select 
+                className="filter-select"
                 value={countryFilter} 
                 onChange={(e) => setCountryFilter(e.target.value)}
               >
@@ -826,42 +520,42 @@ function AppMinimal() {
                 {uniqueCountries.map(country => (
                   <option key={country} value={country}>{country}</option>
                 ))}
-              </FilterSelect>
-            </FilterSection>
-
-            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
-              <MetricCard>
-                <MetricLabel>Total Machines</MetricLabel>
-                <MetricValue>{analytics.total}</MetricValue>
-              </MetricCard>
-              
-              <MetricCard>
-                <MetricLabel>System Uptime</MetricLabel>
-                <MetricValue>{analytics.uptime}%</MetricValue>
-              </MetricCard>
-              
-              <MetricCard>
-                <MetricLabel>Avg Temperature</MetricLabel>
-                <MetricValue>{analytics.avgTemp}°C</MetricValue>
-              </MetricCard>
-              
-              <MetricCard>
-                <MetricLabel>Avg Pressure</MetricLabel>
-                <MetricValue>{analytics.avgPressure} bar</MetricValue>
-              </MetricCard>
-              
-              <MetricCard>
-                <MetricLabel>Avg Speed</MetricLabel>
-                <MetricValue>{analytics.avgSpeed} rpm</MetricValue>
-              </MetricCard>
-              
-              <MetricCard>
-                <MetricLabel>Avg Disk Space</MetricLabel>
-                <MetricValue>{analytics.avgDiskVolume}%</MetricValue>
-              </MetricCard>
+              </select>
             </div>
-          </PanelContent>
-        </AnalyticsPanel>
+
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e9ecef' }}>
+              <div className="metric-card">
+                <div className="metric-label">Total Machines</div>
+                <div className="metric-value">{analytics.total}</div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-label">System Uptime</div>
+                <div className="metric-value">{analytics.uptime}%</div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-label">Avg Temperature</div>
+                <div className="metric-value">{analytics.avgTemp}°C</div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-label">Avg Pressure</div>
+                <div className="metric-value">{analytics.avgPressure} bar</div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-label">Avg Speed</div>
+                <div className="metric-value">{analytics.avgSpeed} rpm</div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-label">Avg Disk Space</div>
+                <div className="metric-value">{analytics.avgDiskVolume}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <MapContainer
           center={[0, 0]}
@@ -873,104 +567,142 @@ function AppMinimal() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           
-          {/* Auto-fit bounds to show all markers */}
           <AutoFitBounds machines={arrangedMachines} />
-
-          {/* Machine markers */}
-          {arrangedMachines.map((machine) => (
+          
+          {arrangedMachines.map(machine => (
             <Marker
               key={machine.id}
               position={[machine.latitude, machine.longitude]}
               icon={createCustomIcon(machine.status, machine.system_type, machine.id, recentlyChangedMachines.has(machine.id))}
             >
               <Popup>
-                <MachinePopup>
-                  <MachineName>{machine.name}</MachineName>
-                  <MachineDetails>
-                    <DetailLabel>Status:</DetailLabel> {machine.status.toUpperCase()}
-                  </MachineDetails>
-                  <MachineDetails>
-                    <DetailLabel>System Type:</DetailLabel> {machine.system_type || 'Unknown'}
-                  </MachineDetails>
-                  <MachineDetails>
-                    <DetailLabel>Location:</DetailLabel> {machine.location}
-                  </MachineDetails>
-                  {machine.boxCountry && (
-                    <MachineDetails>
-                      <DetailLabel>Country Box:</DetailLabel> {machine.boxCountry} (Position {machine.boxIndex + 1} of {machine.boxTotal})
-                    </MachineDetails>
-                  )}
-                  <MachineDetails>
-                    <DetailLabel>Last Seen:</DetailLabel> {new Date(machine.last_seen).toLocaleString()}
-                  </MachineDetails>
+                <div className="machine-popup">
+                  <h3 className="machine-name">{machine.name}</h3>
                   
-                  {machine.data && (
-                    <DataGrid>
-                      <DataItem>Temp: {machine.data.temperature}°C</DataItem>
-                      <DataItem>Pressure: {machine.data.pressure} bar</DataItem>
-                      <DataItem>Speed: {machine.data.speed} rpm</DataItem>
-                      <DataItem>Disk: {machine.data.disk_volume}%</DataItem>
-                    </DataGrid>
-                  )}
-                </MachinePopup>
+                  {/* Basic System Information */}
+                  <div className="machine-details">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">{machine.status.toUpperCase()}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">System Type:</span>
+                    <span className="detail-value">{machine.system_type || 'Unknown'}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">Location:</span>
+                    <span className="detail-value">{machine.location}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">Last Seen:</span>
+                    <span className="detail-value">{new Date(machine.last_seen).toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Specification Required Data */}
+                  <div className="system-info-section">
+                    <h4 className="system-info-title">System Information</h4>
+                    
+                    <div className="machine-details">
+                      <span className="detail-label">API Version:</span>
+                      <span className="detail-value">{machine.data?.api_version || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Windows Version:</span>
+                      <span className="detail-value">{machine.data?.windows_version || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Uptime:</span>
+                      <span className="detail-value">{machine.data?.uptime_days || 0} days</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Computer Name:</span>
+                      <span className="detail-value">{machine.data?.computer_name || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Actual Time:</span>
+                      <span className="detail-value">{machine.data?.actual_time ? new Date(machine.data.actual_time).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Time Zone:</span>
+                      <span className="detail-value">{machine.data?.timezone || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Daylight Saving:</span>
+                      <span className="detail-value">{machine.data?.timezone_supports_daylight_saving ? 'Yes' : 'No'}</span>
+                    </div>
+                    
+                    {/* Disk Information */}
+                    {machine.data?.disk_usage && machine.data.disk_usage.length > 0 && (
+                      <div className="disk-info">
+                        <strong>Disk Information:</strong>
+                        {machine.data.disk_usage.map((disk, index) => (
+                          <div key={index} className="disk-item">
+                            <span>{disk.mountPoint} ({disk.label})</span>
+                            <span>{disk.usedPercentage}% used</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Sensor Data */}
+                    {machine.data && (
+                      <div className="data-grid">
+                        <div className="data-item">Temperature: {machine.data.temperature}°C</div>
+                        <div className="data-item">Pressure: {machine.data.pressure} bar</div>
+                        <div className="data-item">Speed: {machine.data.speed} rpm</div>
+                        <div className="data-item">Disk Usage: {machine.data.disk_volume}%</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Popup>
             </Marker>
           ))}
         </MapContainer>
 
-        <StatusPanel>
-          <h4 style={{ margin: '0 0 1rem 0', color: '#111827', fontWeight: '500' }}>Machine Status</h4>
-          <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: '#6b7280' }}>
-            Connection: <span style={{ color: connectionStatus === 'Connected' ? '#4ade80' : '#f87171' }}>{connectionStatus}</span>
+        <div className="status-panel">
+          <h4 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>Machine Status</h4>
+          <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#6c757d' }}>
+            Connection: {connectionStatus}
           </div>
           
-          <StatusItem>
-            <StatusIndicator $status="online" />
-            Online: {statusCounts.online || 0}
-          </StatusItem>
-          <StatusItem>
-            <StatusIndicator $status="warning" />
-            Warning: {statusCounts.warning || 0}
-          </StatusItem>
-          <StatusItem>
-            <StatusIndicator $status="offline" />
-            Offline: {statusCounts.offline || 0}
-          </StatusItem>
-          <StatusItem>
-            <StatusIndicator $status="error" />
-            Error: {statusCounts.error || 0}
-          </StatusItem>
+           <div className="status-item">
+             <div className="status-indicator grey"></div>
+             Not Connected: {statusCounts.grey || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator black"></div>
+             Not Accessible: {statusCounts.black || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator green"></div>
+             Active (No Alarms): {statusCounts.green || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator yellow"></div>
+             Active (Warnings): {statusCounts.yellow || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator red"></div>
+             Active (Errors): {statusCounts.red || 0}
+           </div>
           
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-            <h5 style={{ margin: '0 0 0.75rem 0', color: '#111827', fontSize: '0.85rem', fontWeight: '500' }}>System Types:</h5>
+          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
+            <h5 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50', fontSize: '0.9rem' }}>System Types:</h5>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <div style={{
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                backgroundColor: '#4ade80',
-                border: '2px solid #ffffff',
-                marginRight: '0.75rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}></div>
-              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Automated System 4000</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{
                 width: '12px',
                 height: '12px',
-                borderRadius: '2px',
-                backgroundColor: '#4ade80',
-                border: '2px solid #ffffff',
-                marginRight: '0.75rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                backgroundColor: '#28a745',
+                borderRadius: '50%',
+                border: '2px solid white',
+                marginRight: '0.5rem'
               }}></div>
-              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Mini-System 4000</span>
+              <span style={{ fontSize: '0.8rem' }}>Mini-System 4000</span>
             </div>
           </div>
-        </StatusPanel>
-      </MapWrapper>
-    </AppContainer>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -16,8 +16,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
-import styled from 'styled-components';
 import 'leaflet/dist/leaflet.css';
+import './styles.css';
 
 // Import different map designs
 import AppDark from './AppDark';
@@ -120,22 +120,38 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   let shape = 'circle'; // Default shape
   let size = 20;
   
-  // Set color based on status
+  // Set color based on status - SPECIFICATION COMPLIANT
+  // Grey: Not connected to SOSON, Black: System not accessible, Green: Active with no alarms, Yellow: Active with warnings, Red: Active with errors
   switch (status) {
-    case 'online':
+    case 'grey': // Not connected to SOSON
+      color = '#6c757d';
+      break;
+    case 'black': // System not accessible
+      color = '#000000';
+      break;
+    case 'green': // Active with no alarms
       color = '#28a745';
       break;
-    case 'warning':
+    case 'yellow': // Active with warnings
       color = '#ffc107';
       break;
-    case 'offline':
+    case 'red': // Active with errors
       color = '#dc3545';
       break;
-    case 'error':
-      color = '#6f42c1';
+    case 'online': // Legacy support - map to green
+      color = '#28a745';
+      break;
+    case 'warning': // Legacy support - map to yellow
+      color = '#ffc107';
+      break;
+    case 'offline': // Legacy support - map to black
+      color = '#000000';
+      break;
+    case 'error': // Legacy support - map to red
+      color = '#dc3545';
       break;
     default:
-      color = '#6c757d';
+      color = '#6c757d'; // Default to grey
   }
   
   // Set shape and size based on system type
@@ -150,10 +166,10 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   const borderRadius = shape === 'circle' ? '50%' : '4px';
   const borderWidth = systemType === 'Automated System 4000' ? '4px' : '3px';
   
-  // Check if this is an alert status that should flash
-  const alertStatuses = ['warning', 'offline', 'error'];
+  // Check if this is an alert status that should flash - SPECIFICATION COMPLIANT
+  const alertStatuses = ['yellow', 'red', 'black', 'grey'];
   const isAlertStatus = alertStatuses.includes(status);
-  const isOnlineStatus = status === 'online';
+  const isOnlineStatus = status === 'green';
   
   // Create pulsing border for recently changed machines
   const shouldPulseRed = isAlertStatus && recentlyChanged;
@@ -166,7 +182,7 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
            const pulseStyle = shouldPulse ? `
              border: ${borderWidth} solid ${pulseColor} !important;
              animation: ${pulseAnimation} 1s ease-in-out infinite;
-             z-index: 9999 !important;
+             z-index: 99999 !important;
              position: relative;
            ` : '';
 
@@ -189,319 +205,14 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   });
 };
 
-const AppContainer = styled.div`
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  border: none;
-  
-  /* Hide scrollbars */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  
-  &::-webkit-scrollbar {
-    display: none; /* WebKit */
-  }
-  
-  /* Pulsing red border animation for alert markers - 30 seconds then returns to normal */
-  @keyframes pulse-red-30s {
-    0%, 90% { 
-      border: 3px solid rgba(255, 0, 0, 0.8);
-      box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-    }
-    5%, 15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% { 
-      border: 6px solid rgba(255, 0, 0, 1);
-      box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
-    }
-    95%, 100% { 
-      border: 3px solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-  }
-  
-           /* Individual pulsing animation for newly changed machines */
-           @keyframes pulse-individual {
-             0%, 100% { 
-               border: 3px solid rgba(255, 0, 0, 0.8);
-               box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-               z-index: 9999;
-             }
-             50% { 
-               border: 6px solid rgba(255, 0, 0, 1);
-               box-shadow: 0 0 0 12px rgba(255, 0, 0, 0.4);
-               z-index: 9999;
-             }
-           }
-           
-           /* Green pulsing animation for recoveries */
-           @keyframes pulse-green {
-             0%, 100% { 
-               border: 3px solid rgba(0, 255, 0, 0.8);
-               box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
-               z-index: 9999;
-             }
-             50% { 
-               border: 6px solid rgba(0, 255, 0, 1);
-               box-shadow: 0 0 0 12px rgba(0, 255, 0, 0.4);
-               z-index: 9999;
-             }
-           }
-`;
+// AppContainer is now handled by CSS class 'app-container'
 
 
-const MapWrapper = styled.div`
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-`;
+// All styled components are now handled by CSS classes in styles.css
 
-const StatusPanel = styled.div`
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 1000;
-  min-width: 200px;
-`;
+// All styled components are now handled by CSS classes in styles.css
 
-const StatusItem = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const StatusIndicator = styled.div`
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  background-color: ${props => {
-    switch (props.$status) {
-      case 'online': return '#28a745';
-      case 'warning': return '#ffc107';
-      case 'offline': return '#dc3545';
-      case 'error': return '#6f42c1';
-      default: return '#6c757d';
-    }
-  }};
-`;
-
-const MachinePopup = styled.div`
-  min-width: 250px;
-`;
-
-const MachineName = styled.h3`
-  margin: 0 0 0.5rem 0;
-  color: #2c3e50;
-`;
-
-const MachineDetails = styled.div`
-  margin-bottom: 0.5rem;
-`;
-
-const DetailLabel = styled.span`
-  font-weight: bold;
-  margin-right: 0.5rem;
-`;
-
-const DataGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-`;
-
-const DataItem = styled.div`
-  background: #f8f9fa;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-`;
-
-// Analytics Dashboard Components
-const AnalyticsPanel = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 1000;
-  min-width: 280px;
-  max-width: 320px;
-`;
-
-const PanelHeader = styled.div`
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e9ecef;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  color: #2c3e50;
-  
-  &:hover {
-    background: #f8f9fa;
-  }
-`;
-
-const PanelContent = styled.div`
-  padding: 1rem;
-  display: ${props => props.$isOpen ? 'block' : 'none'};
-`;
-
-const FilterSection = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const FilterLabel = styled.label`
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 0.25rem;
-`;
-
-const FilterSelect = styled.select`
-  width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  background: white;
-`;
-
-const MetricCard = styled.div`
-  background: #f8f9fa;
-  padding: 0.5rem;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-`;
-
-const MetricLabel = styled.div`
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 0.25rem;
-`;
-
-const MetricValue = styled.div`
-  color: #2c3e50;
-  font-size: 0.9rem;
-`;
-
-const ToggleIcon = styled.span`
-  transition: transform 0.2s ease;
-  transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-`;
-
-// Style Switcher Components
-const StyleSwitcher = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-width: 200px;
-`;
-
-const StyleSwitcherHeader = styled.div`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-  font-weight: 600;
-  
-  &:hover {
-    background: #f8fafc;
-  }
-`;
-
-const StyleSwitcherContent = styled.div`
-  display: ${props => props.$isOpen ? 'flex' : 'none'};
-  gap: 0.5rem;
-  margin-left: 0.5rem;
-  flex-wrap: wrap;
-`;
-
-const StyleButton = styled.button`
-  padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.$isActive ? '#3b82f6' : '#e2e8f0'};
-  border-radius: 8px;
-  background: ${props => props.$isActive ? '#dbeafe' : '#ffffff'};
-  color: ${props => props.$isActive ? '#1e40af' : '#64748b'};
-  font-weight: ${props => props.$isActive ? '600' : '500'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  
-  &:hover {
-    border-color: #3b82f6;
-    background: #f8fafc;
-    color: #1e40af;
-  }
-`;
-
-const StyleLabel = styled.span`
-  font-weight: 600;
-  color: #374151;
-  margin-right: 0.5rem;
-  font-size: 0.9rem;
-`;
-
-const StyleToggleIcon = styled.span`
-  transition: transform 0.3s ease;
-  transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-  color: #3b82f6;
-  font-weight: 600;
-  margin-left: 0.5rem;
-`;
-
-// Alert Flash Effect
-const AlertFlash = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${props => props.$isFlashing ? (props.$flashColor === 'green' ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)') : 'transparent'};
-  pointer-events: none;
-  z-index: 9999;
-  transition: background 0.1s ease;
-  animation: ${props => props.$isFlashing ? 'strobe 1s ease-in-out' : 'none'};
-  
-  @keyframes strobe {
-    0%, 100% { background: rgba(255, 0, 0, 0.3); }
-    25% { background: rgba(255, 0, 0, 0.1); }
-    50% { background: rgba(255, 0, 0, 0.5); }
-    75% { background: rgba(255, 0, 0, 0.1); }
-  }
-`;
+// All styled components are now handled by CSS classes in styles.css
 
 // Component to auto-fit map to show all markers
 function AutoFitBounds({ machines }) {
@@ -665,29 +376,44 @@ function App() {
     };
   }, []);
 
-  // Filter machines based on selected filters
+  // Filter machines based on selected filters - SPECIFICATION COMPLIANT
   const filteredMachines = useMemo(() => {
     return machines.filter(machine => {
-      const statusMatch = statusFilter === 'all' || machine.status === statusFilter;
+      // Map legacy statuses to specification-compliant statuses for filtering
+      let machineStatus = machine.status;
+      if (machineStatus === 'online') machineStatus = 'green';
+      else if (machineStatus === 'warning') machineStatus = 'yellow';
+      else if (machineStatus === 'offline') machineStatus = 'black';
+      else if (machineStatus === 'error') machineStatus = 'red';
+      
+      const statusMatch = statusFilter === 'all' || machineStatus === statusFilter;
       const systemMatch = systemFilter === 'all' || machine.system_type === systemFilter;
       const countryMatch = countryFilter === 'all' || machine.location === countryFilter;
       return statusMatch && systemMatch && countryMatch;
     });
   }, [machines, statusFilter, systemFilter, countryFilter]);
 
-  // Calculate status counts for filtered machines
+  // Calculate status counts for filtered machines - SPECIFICATION COMPLIANT
   const statusCounts = filteredMachines.reduce((acc, machine) => {
-    acc[machine.status] = (acc[machine.status] || 0) + 1;
+    // Map legacy statuses to specification-compliant statuses
+    let status = machine.status;
+    if (status === 'online') status = 'green';
+    else if (status === 'warning') status = 'yellow';
+    else if (status === 'offline') status = 'black';
+    else if (status === 'error') status = 'red';
+    
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {});
 
-  // Calculate analytics metrics
+  // Calculate analytics metrics - SPECIFICATION COMPLIANT
   const analytics = useMemo(() => {
     const total = filteredMachines.length;
-    const online = statusCounts.online || 0;
-    const warning = statusCounts.warning || 0;
-    const offline = statusCounts.offline || 0;
-    const error = statusCounts.error || 0;
+    const green = statusCounts.green || 0;
+    const yellow = statusCounts.yellow || 0;
+    const red = statusCounts.red || 0;
+    const black = statusCounts.black || 0;
+    const grey = statusCounts.grey || 0;
     
     const avgTemp = filteredMachines.length > 0 
       ? (filteredMachines.reduce((sum, m) => sum + (m.data?.temperature || 0), 0) / filteredMachines.length).toFixed(1)
@@ -707,15 +433,16 @@ function App() {
 
     return {
       total,
-      online,
-      warning,
-      offline,
-      error,
+      green,
+      yellow,
+      red,
+      black,
+      grey,
       avgTemp,
       avgPressure,
       avgSpeed,
       avgDiskVolume,
-      uptime: total > 0 ? ((online / total) * 100).toFixed(1) : 0
+      uptime: total > 0 ? ((green / total) * 100).toFixed(1) : 0
     };
   }, [filteredMachines, statusCounts]);
 
@@ -726,9 +453,9 @@ function App() {
   // Arrange markers in country boxes
   const arrangedMachines = arrangeMarkersInCountryBoxes(filteredMachines);
 
-  // Alert detection and auto-popup logic
+  // Alert detection and auto-popup logic - SPECIFICATION COMPLIANT
   useEffect(() => {
-    const alertStatuses = ['warning', 'offline', 'error'];
+    const alertStatuses = ['yellow', 'red', 'black', 'grey'];
     const machinesNeedingAlert = arrangedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && !alertedMachines.has(machine.id)
     );
@@ -749,7 +476,7 @@ function App() {
       });
     }
 
-    // Reset alerted machines when status improves
+    // Reset alerted machines when status improves - SPECIFICATION COMPLIANT
     const improvedMachines = arrangedMachines.filter(machine => 
       !alertStatuses.includes(machine.status) && alertedMachines.has(machine.id)
     );
@@ -762,14 +489,14 @@ function App() {
     }
   }, [arrangedMachines, alertedMachines]);
 
-  // Flash effect when machines change status
+  // Flash effect when machines change status - SPECIFICATION COMPLIANT
   useEffect(() => {
-    const alertStatuses = ['warning', 'offline', 'error'];
+    const alertStatuses = ['yellow', 'red', 'black', 'grey'];
     const newlyChangedToAlert = arrangedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && recentlyChangedMachines.has(machine.id)
     );
     const newlyReturnedToOnline = arrangedMachines.filter(machine => 
-      machine.status === 'online' && recentlyChangedMachines.has(machine.id)
+      machine.status === 'green' && recentlyChangedMachines.has(machine.id)
     );
 
     // Only trigger flash if there are changes - prioritize green for recoveries
@@ -794,57 +521,60 @@ function App() {
   }, [recentlyChangedMachines, arrangedMachines]);
 
   // If a different style is selected, render that component
-  if (CurrentStyleComponent) {
+  if (CurrentStyleComponent && currentStyle !== 'default') {
     return <CurrentStyleComponent />;
   }
 
   return (
-    <AppContainer>
-      <AlertFlash $isFlashing={alertFlash} $flashColor={flashColor} />
-      <MapWrapper>
+    <div className="app-container">
+      <div className={`alert-flash ${alertFlash ? 'flashing' : ''} ${flashColor}`} />
+      <div className="map-wrapper">
         {/* Style Switcher */}
-        <StyleSwitcher>
-          <StyleSwitcherHeader onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
-            <StyleLabel>Style:</StyleLabel>
-            <StyleToggleIcon $isOpen={styleSwitcherOpen}>▼</StyleToggleIcon>
-          </StyleSwitcherHeader>
-          <StyleSwitcherContent $isOpen={styleSwitcherOpen}>
+        <div className="style-switcher">
+          <div className="style-switcher-header" onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
+            <span className="style-label">Style:</span>
+            <span className={`style-toggle-icon ${styleSwitcherOpen ? 'open' : ''}`}>▼</span>
+          </div>
+          <div className={`style-switcher-content ${styleSwitcherOpen ? '' : 'closed'}`}>
             {styles.map(style => (
-              <StyleButton
+              <button
                 key={style.id}
-                $isActive={currentStyle === style.id}
+                className={`style-button ${currentStyle === style.id ? 'active' : ''}`}
                 onClick={() => setCurrentStyle(style.id)}
               >
                 {style.name}
-              </StyleButton>
+              </button>
             ))}
-          </StyleSwitcherContent>
-        </StyleSwitcher>
+          </div>
+        </div>
 
         {/* Analytics Dashboard */}
-        <AnalyticsPanel>
-          <PanelHeader onClick={() => setAnalyticsOpen(!analyticsOpen)}>
+        <div className="analytics-panel">
+          <div className="panel-header" onClick={() => setAnalyticsOpen(!analyticsOpen)}>
             <span>📊 Analytics & Filters</span>
-            <ToggleIcon $isOpen={analyticsOpen}>▼</ToggleIcon>
-          </PanelHeader>
-          <PanelContent $isOpen={analyticsOpen}>
-            <FilterSection>
-              <FilterLabel>Status Filter</FilterLabel>
-              <FilterSelect 
+            <span className={`toggle-icon ${analyticsOpen ? 'open' : ''}`}>▼</span>
+          </div>
+          <div className={`panel-content ${analyticsOpen ? '' : 'closed'}`}>
+            <div className="filter-section">
+              <label className="filter-label">Status Filter</label>
+              <select 
+                className="filter-select"
                 value={statusFilter} 
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="online">Online</option>
-                <option value="warning">Warning</option>
-                <option value="offline">Offline</option>
-                <option value="error">Error</option>
-              </FilterSelect>
-            </FilterSection>
+                <option value="grey">Not Connected</option>
+                <option value="black">Not Accessible</option>
+                <option value="green">Active (No Alarms)</option>
+                <option value="yellow">Active (Warnings)</option>
+                <option value="red">Active (Errors)</option>
+              </select>
+            </div>
             
-            <FilterSection>
-              <FilterLabel>System Type</FilterLabel>
-              <FilterSelect 
+            <div className="filter-section">
+              <label className="filter-label">System Type</label>
+              <select 
+                className="filter-select"
                 value={systemFilter} 
                 onChange={(e) => setSystemFilter(e.target.value)}
               >
@@ -852,12 +582,13 @@ function App() {
                 {uniqueSystems.map(system => (
                   <option key={system} value={system}>{system}</option>
                 ))}
-              </FilterSelect>
-            </FilterSection>
+              </select>
+            </div>
             
-            <FilterSection>
-              <FilterLabel>Country</FilterLabel>
-              <FilterSelect 
+            <div className="filter-section">
+              <label className="filter-label">Country</label>
+              <select 
+                className="filter-select"
                 value={countryFilter} 
                 onChange={(e) => setCountryFilter(e.target.value)}
               >
@@ -865,42 +596,42 @@ function App() {
                 {uniqueCountries.map(country => (
                   <option key={country} value={country}>{country}</option>
                 ))}
-              </FilterSelect>
-            </FilterSection>
+              </select>
+            </div>
 
             <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e9ecef' }}>
-              <MetricCard>
-                <MetricLabel>Total Machines</MetricLabel>
-                <MetricValue>{analytics.total}</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">Total Machines</div>
+                <div className="metric-value">{analytics.total}</div>
+              </div>
               
-              <MetricCard>
-                <MetricLabel>System Uptime</MetricLabel>
-                <MetricValue>{analytics.uptime}%</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">System Uptime</div>
+                <div className="metric-value">{analytics.uptime}%</div>
+              </div>
               
-              <MetricCard>
-                <MetricLabel>Avg Temperature</MetricLabel>
-                <MetricValue>{analytics.avgTemp}°C</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">Avg Temperature</div>
+                <div className="metric-value">{analytics.avgTemp}°C</div>
+              </div>
               
-              <MetricCard>
-                <MetricLabel>Avg Pressure</MetricLabel>
-                <MetricValue>{analytics.avgPressure} bar</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">Avg Pressure</div>
+                <div className="metric-value">{analytics.avgPressure} bar</div>
+              </div>
               
-              <MetricCard>
-                <MetricLabel>Avg Speed</MetricLabel>
-                <MetricValue>{analytics.avgSpeed} rpm</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">Avg Speed</div>
+                <div className="metric-value">{analytics.avgSpeed} rpm</div>
+              </div>
               
-              <MetricCard>
-                <MetricLabel>Avg Disk Space</MetricLabel>
-                <MetricValue>{analytics.avgDiskVolume}%</MetricValue>
-              </MetricCard>
+              <div className="metric-card">
+                <div className="metric-label">Avg Disk Space</div>
+                <div className="metric-value">{analytics.avgDiskVolume}%</div>
             </div>
-          </PanelContent>
-        </AnalyticsPanel>
+            </div>
+          </div>
+        </div>
 
         <MapContainer
           center={[0, 0]}
@@ -923,62 +654,115 @@ function App() {
               icon={createCustomIcon(machine.status, machine.system_type, machine.id, recentlyChangedMachines.has(machine.id))}
             >
               <Popup>
-                <MachinePopup>
-                  <MachineName>{machine.name}</MachineName>
-                  <MachineDetails>
-                    <DetailLabel>Status:</DetailLabel> {machine.status.toUpperCase()}
-                  </MachineDetails>
-                  <MachineDetails>
-                    <DetailLabel>System Type:</DetailLabel> {machine.system_type || 'Unknown'}
-                  </MachineDetails>
-                  <MachineDetails>
-                    <DetailLabel>Location:</DetailLabel> {machine.location}
-                  </MachineDetails>
-                  {machine.boxCountry && (
-                    <MachineDetails>
-                      <DetailLabel>Country Box:</DetailLabel> {machine.boxCountry} (Position {machine.boxIndex + 1} of {machine.boxTotal})
-                    </MachineDetails>
-                  )}
-                  <MachineDetails>
-                    <DetailLabel>Last Seen:</DetailLabel> {new Date(machine.last_seen).toLocaleString()}
-                  </MachineDetails>
+                <div className="machine-popup">
+                  <h3 className="machine-name">{machine.name}</h3>
                   
+                  {/* Basic System Information */}
+                  <div className="machine-details">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">{machine.status.toUpperCase()}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">System Type:</span>
+                    <span className="detail-value">{machine.system_type || 'Unknown'}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">Location:</span>
+                    <span className="detail-value">{machine.location}</span>
+                  </div>
+                  <div className="machine-details">
+                    <span className="detail-label">Last Seen:</span>
+                    <span className="detail-value">{new Date(machine.last_seen).toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Specification Required Data */}
+                  <div className="system-info-section">
+                    <h4 className="system-info-title">System Information</h4>
+                    
+                    <div className="machine-details">
+                      <span className="detail-label">API Version:</span>
+                      <span className="detail-value">{machine.data?.api_version || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Windows Version:</span>
+                      <span className="detail-value">{machine.data?.windows_version || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Uptime:</span>
+                      <span className="detail-value">{machine.data?.uptime_days || 0} days</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Computer Name:</span>
+                      <span className="detail-value">{machine.data?.computer_name || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Actual Time:</span>
+                      <span className="detail-value">{machine.data?.actual_time ? new Date(machine.data.actual_time).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Time Zone:</span>
+                      <span className="detail-value">{machine.data?.timezone || 'N/A'}</span>
+                    </div>
+                    <div className="machine-details">
+                      <span className="detail-label">Daylight Saving:</span>
+                      <span className="detail-value">{machine.data?.timezone_supports_daylight_saving ? 'Yes' : 'No'}</span>
+                    </div>
+                    
+                    {/* Disk Information */}
+                    {machine.data?.disk_usage && machine.data.disk_usage.length > 0 && (
+                      <div className="disk-info">
+                        <strong>Disk Information:</strong>
+                        {machine.data.disk_usage.map((disk, index) => (
+                          <div key={index} className="disk-item">
+                            <span>{disk.mountPoint} ({disk.label})</span>
+                            <span>{disk.usedPercentage}% used</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Sensor Data */}
                   {machine.data && (
-                    <DataGrid>
-                      <DataItem>Temp: {machine.data.temperature}°C</DataItem>
-                      <DataItem>Pressure: {machine.data.pressure} bar</DataItem>
-                      <DataItem>Speed: {machine.data.speed} rpm</DataItem>
-                      <DataItem>Disk: {machine.data.disk_volume}%</DataItem>
-                    </DataGrid>
-                  )}
-                </MachinePopup>
+                      <div className="data-grid">
+                        <div className="data-item">Temperature: {machine.data.temperature}°C</div>
+                        <div className="data-item">Pressure: {machine.data.pressure} bar</div>
+                        <div className="data-item">Speed: {machine.data.speed} rpm</div>
+                        <div className="data-item">Disk Usage: {machine.data.disk_volume}%</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Popup>
             </Marker>
           ))}
         </MapContainer>
 
-        <StatusPanel>
+        <div className="status-panel">
           <h4 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>Machine Status</h4>
           <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#6c757d' }}>
             Connection: {connectionStatus}
           </div>
           
-           <StatusItem>
-             <StatusIndicator $status="online" />
-             Online: {statusCounts.online || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="warning" />
-             Warning: {statusCounts.warning || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="offline" />
-             Offline: {statusCounts.offline || 0}
-           </StatusItem>
-           <StatusItem>
-             <StatusIndicator $status="error" />
-             Error: {statusCounts.error || 0}
-           </StatusItem>
+           <div className="status-item">
+             <div className="status-indicator grey"></div>
+             Not Connected: {statusCounts.grey || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator black"></div>
+             Not Accessible: {statusCounts.black || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator green"></div>
+             Active (No Alarms): {statusCounts.green || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator yellow"></div>
+             Active (Warnings): {statusCounts.yellow || 0}
+           </div>
+           <div className="status-item">
+             <div className="status-indicator red"></div>
+             Active (Errors): {statusCounts.red || 0}
+           </div>
           
           <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
             <h5 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50', fontSize: '0.9rem' }}>System Types:</h5>
@@ -1005,9 +789,9 @@ function App() {
               <span style={{ fontSize: '0.8rem' }}>Mini-System 4000</span>
             </div>
           </div>
-        </StatusPanel>
-      </MapWrapper>
-    </AppContainer>
+        </div>
+      </div>
+    </div>
   );
 }
 
