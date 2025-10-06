@@ -12,18 +12,13 @@
  * 5. Add proper testing and monitoring
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import './styles.css';
 
-// Import different map designs
-import AppDark from './AppDark';
-import AppMinimal from './AppMinimal';
-import AppIndustrial from './AppIndustrial';
-import AppModern from './AppModern';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -40,72 +35,7 @@ L.Icon.Default.mergeOptions({
 // PRODUCTION: This function is production ready and handles real machine data
 // PRODUCTION: Consider adding performance optimizations for large datasets
 
-// Function to arrange markers in country boxes
-const arrangeMarkersInCountryBoxes = (machines) => {
-  const arranged = [];
-  
-  // Group machines by country
-  const machinesByCountry = {};
-  machines.forEach(machine => {
-    const country = machine.location;
-    if (!machinesByCountry[country]) {
-      machinesByCountry[country] = [];
-    }
-    machinesByCountry[country].push(machine);
-  });
-  
-  // Create a box for each country with unique positions to avoid overlap
-  const countries = Object.keys(machinesByCountry);
-  const countryPositions = {
-    'China': { lat: 35.0, lng: 105.0 },
-    'Sweden': { lat: 60.0, lng: 15.0 },
-    'USA': { lat: 40.0, lng: -100.0 },
-    'Korea': { lat: 35.5, lng: 127.5 },
-    'Brazil': { lat: -15.0, lng: -47.0 },
-    'Mexico': { lat: 23.0, lng: -102.0 },
-    'Turkey': { lat: 39.0, lng: 35.0 },
-    'Spain': { lat: 40.0, lng: -3.0 },
-    'Italy': { lat: 41.5, lng: 12.5 },
-    'India': { lat: 20.0, lng: 77.0 },
-    'Japan': { lat: 36.0, lng: 138.0 },
-    'Portugal': { lat: 39.5, lng: -8.0 }
-  };
-  
-  countries.forEach((country, countryIndex) => {
-    const countryMachines = machinesByCountry[country];
-    
-    // Use predefined position for this country, or fallback to first machine location
-    const position = countryPositions[country] || { lat: countryMachines[0].latitude, lng: countryMachines[0].longitude };
-    const centerLat = position.lat;
-    const centerLng = position.lng;
-    
-    // All machines in this country - arrange in tight box around the center
-    const boxSpacing = 3.5; // Balanced spacing - more compact than original but not too tight
-    
-    // Calculate grid dimensions for this country's machines
-    const cols = Math.ceil(Math.sqrt(countryMachines.length));
-    const rows = Math.ceil(countryMachines.length / cols);
-    
-    countryMachines.forEach((machine, index) => {
-      const row = Math.floor(index / cols);
-      const col = index % cols;
-      
-      const offsetLat = (row - (rows - 1) / 2) * boxSpacing;
-      const offsetLng = (col - (cols - 1) / 2) * boxSpacing;
-      
-      arranged.push({
-        ...machine,
-        latitude: centerLat + offsetLat,
-        longitude: centerLng + offsetLng,
-        boxCountry: country,
-        boxIndex: index,
-        boxTotal: countryMachines.length
-      });
-    });
-  });
-  
-  return arranged;
-};
+// Use machines in their real locations - no grid arrangement needed
 
 // =============================================================================
 // CUSTOM ICONS - PRODUCTION READY
@@ -234,6 +164,107 @@ function AutoFitBounds({ machines }) {
   return null;
 }
 
+// Component for individual machine markers with auto-popup capability
+function MachineMarker({ machine, icon, recentlyChanged, popupsToOpen, onPopupOpened }) {
+  const markerRef = useRef(null);
+  
+  useEffect(() => {
+    if (markerRef.current && popupsToOpen.has(machine.id)) {
+      markerRef.current.openPopup();
+      onPopupOpened(machine.id);
+    }
+  }, [machine.id, popupsToOpen, onPopupOpened]);
+  
+  return (
+    <Marker
+      ref={markerRef}
+      position={[machine.latitude, machine.longitude]}
+      icon={icon}
+    >
+      <Popup>
+        <div className="machine-popup">
+          <h3 className="machine-name">{machine.name}</h3>
+          
+          {/* Basic System Information */}
+          <div className="machine-details">
+            <span className="detail-label">Status:</span>
+            <span className="detail-value">{machine.status.toUpperCase()}</span>
+          </div>
+          <div className="machine-details">
+            <span className="detail-label">System Type:</span>
+            <span className="detail-value">{machine.system_type || 'Unknown'}</span>
+          </div>
+          <div className="machine-details">
+            <span className="detail-label">Location:</span>
+            <span className="detail-value">{machine.location}</span>
+          </div>
+          <div className="machine-details">
+            <span className="detail-label">Last Seen:</span>
+            <span className="detail-value">{new Date(machine.last_seen).toLocaleString()}</span>
+          </div>
+          
+          {/* Specification Required Data */}
+          <div className="system-info-section">
+            <h4 className="system-info-title">System Information</h4>
+            
+            <div className="machine-details">
+              <span className="detail-label">API Version:</span>
+              <span className="detail-value">{machine.data?.api_version || 'N/A'}</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Windows Version:</span>
+              <span className="detail-value">{machine.data?.windows_version || 'N/A'}</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Uptime:</span>
+              <span className="detail-value">{machine.data?.uptime_days || 0} days</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Computer Name:</span>
+              <span className="detail-value">{machine.data?.computer_name || 'N/A'}</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Actual Time:</span>
+              <span className="detail-value">{machine.data?.actual_time ? new Date(machine.data.actual_time).toLocaleString() : 'N/A'}</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Time Zone:</span>
+              <span className="detail-value">{machine.data?.timezone || 'N/A'}</span>
+            </div>
+            <div className="machine-details">
+              <span className="detail-label">Daylight Saving:</span>
+              <span className="detail-value">{machine.data?.timezone_supports_daylight_saving ? 'Yes' : 'No'}</span>
+            </div>
+            
+            {/* Disk Information */}
+            {machine.data?.disk_usage && machine.data.disk_usage.length > 0 && (
+              <div className="disk-info">
+                <strong>Disk Information:</strong>
+                {machine.data.disk_usage.map((disk, index) => (
+                  <div key={index} className="disk-item">
+                    <span>{disk.mountPoint} ({disk.label})</span>
+                    <span>{disk.usedPercentage}% used</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Sensor Data */}
+            {machine.data && (
+              <div className="data-grid">
+                <div className="data-item">Temperature: {machine.data.temperature}°C</div>
+                <div className="data-item">Pressure: {machine.data.pressure} bar</div>
+                <div className="data-item">Speed: {machine.data.speed} rpm</div>
+                <div className="data-item">Disk Usage: {machine.data.disk_volume}%</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 // =============================================================================
 // MAIN APPLICATION COMPONENT - PRODUCTION READY
 // =============================================================================
@@ -254,26 +285,49 @@ function App() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [systemFilter, setSystemFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
-  const [styleSwitcherOpen, setStyleSwitcherOpen] = useState(false);
-  const [currentStyle, setCurrentStyle] = useState('original');
   const [alertFlash, setAlertFlash] = useState(false);
   const [flashColor, setFlashColor] = useState('red');
   const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [recentlyChangedMachines, setRecentlyChangedMachines] = useState(new Set());
-  const [machinePreviousStatus, setMachinePreviousStatus] = useState(new Map());
+  // const [machinePreviousStatus, setMachinePreviousStatus] = useState(new Map());
   const [lastFlashTime, setLastFlashTime] = useState(0);
+  const [popupsToOpen, setPopupsToOpen] = useState(new Set());
+  const [simulationPaused, setSimulationPaused] = useState(true);
+  const [markersListOpen, setMarkersListOpen] = useState(false);
+  const [expandedCountries, setExpandedCountries] = useState(new Set());
 
-  // Style definitions
-  const styles = [
-    { id: 'original', name: 'Original', component: null },
-    { id: 'dark', name: 'Dark', component: AppDark },
-    { id: 'minimal', name: 'Minimal', component: AppMinimal },
-    { id: 'industrial', name: 'Industrial', component: AppIndustrial },
-    { id: 'modern', name: 'Modern', component: AppModern }
-  ];
+  // Callback to handle when a popup is opened
+  const handlePopupOpened = (machineId) => {
+    setPopupsToOpen(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(machineId);
+      return newSet;
+    });
+  };
 
-  // Get current style component
-  const CurrentStyleComponent = styles.find(s => s.id === currentStyle)?.component;
+  // Toggle simulation pause/resume
+  const toggleSimulationPause = () => {
+    setSimulationPaused(prev => !prev);
+    console.log(`Simulation ${simulationPaused ? 'resumed' : 'paused'}`);
+  };
+
+  // Toggle markers list window
+  const toggleMarkersList = () => {
+    setMarkersListOpen(prev => !prev);
+  };
+
+  // Toggle country expansion
+  const toggleCountryExpansion = (country) => {
+    setExpandedCountries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(country)) {
+        newSet.delete(country);
+      } else {
+        newSet.add(country);
+      }
+      return newSet;
+    });
+  };
 
   // =============================================================================
   // API DATA LOADING - PRODUCTION READY
@@ -331,14 +385,20 @@ function App() {
         const message = JSON.parse(event.data);
         console.log('RECEIVED:', message);
         if (message.type === 'machine_update') {
+          // Skip updates if simulation is paused
+          if (simulationPaused) {
+            console.log(`SIMULATION PAUSED: Skipping update for machine ${message.machine_id}`);
+            return;
+          }
+          
           console.log(`UPDATING: Machine ${message.machine_id} to ${message.status}`);
           
           // Track previous status for this machine
-          setMachinePreviousStatus(prev => {
-            const newMap = new Map(prev);
-            newMap.set(message.machine_id, message.status);
-            return newMap;
-          });
+          // setMachinePreviousStatus(prev => {
+          //   const newMap = new Map(prev);
+          //   newMap.set(message.machine_id, message.status);
+          //   return newMap;
+          // });
           
           // Track this machine as recently changed for pulsing animation
           setRecentlyChangedMachines(prev => new Set([...prev, message.machine_id]));
@@ -374,7 +434,7 @@ function App() {
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [simulationPaused]);
 
   // Filter machines based on selected filters - SPECIFICATION COMPLIANT
   const filteredMachines = useMemo(() => {
@@ -450,13 +510,33 @@ function App() {
   const uniqueCountries = [...new Set(machines.map(m => m.location))].sort();
   const uniqueSystems = [...new Set(machines.map(m => m.system_type))].filter(Boolean);
 
-  // Arrange markers in country boxes
-  const arrangedMachines = arrangeMarkersInCountryBoxes(filteredMachines);
+  // Use filtered machines in their real locations
+  const displayedMachines = filteredMachines;
+
+  // Group machines by location
+  const groupedMachines = useMemo(() => {
+    const groups = {};
+    displayedMachines.forEach(machine => {
+      const location = machine.location || 'Unknown';
+      if (!groups[location]) {
+        groups[location] = [];
+      }
+      groups[location].push(machine);
+    });
+    
+    // Sort locations alphabetically and machines within each location by name
+    const sortedGroups = {};
+    Object.keys(groups).sort().forEach(location => {
+      sortedGroups[location] = groups[location].sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return sortedGroups;
+  }, [displayedMachines]);
 
   // Alert detection and auto-popup logic - SPECIFICATION COMPLIANT
   useEffect(() => {
     const alertStatuses = ['yellow', 'red', 'black', 'grey'];
-    const machinesNeedingAlert = arrangedMachines.filter(machine => 
+    const machinesNeedingAlert = displayedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && !alertedMachines.has(machine.id)
     );
 
@@ -470,14 +550,16 @@ function App() {
       // Add machines to alerted set
       setAlertedMachines(prev => new Set([...prev, ...machinesNeedingAlert.map(m => m.id)]));
 
-      // Auto-open popups for alert machines (simulated by console log for now)
+      // Auto-open popups for alert machines
       machinesNeedingAlert.forEach(machine => {
         console.log(`ALERT: ${machine.name} is ${machine.status.toUpperCase()}!`);
+        // Add machine to popups to open
+        setPopupsToOpen(prev => new Set([...prev, machine.id]));
       });
     }
 
     // Reset alerted machines when status improves - SPECIFICATION COMPLIANT
-    const improvedMachines = arrangedMachines.filter(machine => 
+    const improvedMachines = displayedMachines.filter(machine => 
       !alertStatuses.includes(machine.status) && alertedMachines.has(machine.id)
     );
     if (improvedMachines.length > 0) {
@@ -487,15 +569,15 @@ function App() {
         return newSet;
       });
     }
-  }, [arrangedMachines, alertedMachines]);
+  }, [displayedMachines, alertedMachines]);
 
   // Flash effect when machines change status - SPECIFICATION COMPLIANT
   useEffect(() => {
     const alertStatuses = ['yellow', 'red', 'black', 'grey'];
-    const newlyChangedToAlert = arrangedMachines.filter(machine => 
+    const newlyChangedToAlert = displayedMachines.filter(machine => 
       alertStatuses.includes(machine.status) && recentlyChangedMachines.has(machine.id)
     );
-    const newlyReturnedToOnline = arrangedMachines.filter(machine => 
+    const newlyReturnedToOnline = displayedMachines.filter(machine => 
       machine.status === 'green' && recentlyChangedMachines.has(machine.id)
     );
 
@@ -518,40 +600,29 @@ function App() {
       setLastFlashTime(now);
       setTimeout(() => setAlertFlash(false), 2000);
     }
-  }, [recentlyChangedMachines, arrangedMachines]);
+  }, [recentlyChangedMachines, displayedMachines, lastFlashTime]);
 
-  // If a different style is selected, render that component
-  if (CurrentStyleComponent && currentStyle !== 'default') {
-    return <CurrentStyleComponent />;
-  }
+  // Render the main application component
 
   return (
     <div className="app-container">
       <div className={`alert-flash ${alertFlash ? 'flashing' : ''} ${flashColor}`} />
       <div className="map-wrapper">
-        {/* Style Switcher */}
-        <div className="style-switcher">
-          <div className="style-switcher-header" onClick={() => setStyleSwitcherOpen(!styleSwitcherOpen)}>
-            <span className="style-label">Style:</span>
-            <span className={`style-toggle-icon ${styleSwitcherOpen ? 'open' : ''}`}>▼</span>
-          </div>
-          <div className={`style-switcher-content ${styleSwitcherOpen ? '' : 'closed'}`}>
-            {styles.map(style => (
-              <button
-                key={style.id}
-                className={`style-button ${currentStyle === style.id ? 'active' : ''}`}
-                onClick={() => setCurrentStyle(style.id)}
-              >
-                {style.name}
-              </button>
-            ))}
+
+        {/* SinterCast Logo */}
+        <div className="sintercast-logo">
+          <div className="logo-small">
+            <span className="logo-text-small">SinterCast</span>
+            <span className="logo-subtitle-small">— Supermetal CGI —</span>
           </div>
         </div>
 
         {/* Analytics Dashboard */}
         <div className="analytics-panel">
           <div className="panel-header" onClick={() => setAnalyticsOpen(!analyticsOpen)}>
-            <span>📊 Analytics & Filters</span>
+            <div className="header-left">
+              <span className="analytics-title">📊 Analytics & Filters</span>
+            </div>
             <span className={`toggle-icon ${analyticsOpen ? 'open' : ''}`}>▼</span>
           </div>
           <div className={`panel-content ${analyticsOpen ? '' : 'closed'}`}>
@@ -639,101 +710,24 @@ function App() {
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+            className="sintercast-map-tiles"
           />
           
            {/* Auto-fit bounds to show all markers */}
-           <AutoFitBounds machines={arrangedMachines} />
+           <AutoFitBounds machines={displayedMachines} />
 
-          {/* Machine markers */}
-          {arrangedMachines.map((machine) => (
-            <Marker
+          {/* Machine markers with auto-popup capability */}
+          {displayedMachines.map((machine) => (
+            <MachineMarker
               key={machine.id}
-              position={[machine.latitude, machine.longitude]}
+              machine={machine}
               icon={createCustomIcon(machine.status, machine.system_type, machine.id, recentlyChangedMachines.has(machine.id))}
-            >
-              <Popup>
-                <div className="machine-popup">
-                  <h3 className="machine-name">{machine.name}</h3>
-                  
-                  {/* Basic System Information */}
-                  <div className="machine-details">
-                    <span className="detail-label">Status:</span>
-                    <span className="detail-value">{machine.status.toUpperCase()}</span>
-                  </div>
-                  <div className="machine-details">
-                    <span className="detail-label">System Type:</span>
-                    <span className="detail-value">{machine.system_type || 'Unknown'}</span>
-                  </div>
-                  <div className="machine-details">
-                    <span className="detail-label">Location:</span>
-                    <span className="detail-value">{machine.location}</span>
-                  </div>
-                  <div className="machine-details">
-                    <span className="detail-label">Last Seen:</span>
-                    <span className="detail-value">{new Date(machine.last_seen).toLocaleString()}</span>
-                  </div>
-                  
-                  {/* Specification Required Data */}
-                  <div className="system-info-section">
-                    <h4 className="system-info-title">System Information</h4>
-                    
-                    <div className="machine-details">
-                      <span className="detail-label">API Version:</span>
-                      <span className="detail-value">{machine.data?.api_version || 'N/A'}</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Windows Version:</span>
-                      <span className="detail-value">{machine.data?.windows_version || 'N/A'}</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Uptime:</span>
-                      <span className="detail-value">{machine.data?.uptime_days || 0} days</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Computer Name:</span>
-                      <span className="detail-value">{machine.data?.computer_name || 'N/A'}</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Actual Time:</span>
-                      <span className="detail-value">{machine.data?.actual_time ? new Date(machine.data.actual_time).toLocaleString() : 'N/A'}</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Time Zone:</span>
-                      <span className="detail-value">{machine.data?.timezone || 'N/A'}</span>
-                    </div>
-                    <div className="machine-details">
-                      <span className="detail-label">Daylight Saving:</span>
-                      <span className="detail-value">{machine.data?.timezone_supports_daylight_saving ? 'Yes' : 'No'}</span>
-                    </div>
-                    
-                    {/* Disk Information */}
-                    {machine.data?.disk_usage && machine.data.disk_usage.length > 0 && (
-                      <div className="disk-info">
-                        <strong>Disk Information:</strong>
-                        {machine.data.disk_usage.map((disk, index) => (
-                          <div key={index} className="disk-item">
-                            <span>{disk.mountPoint} ({disk.label})</span>
-                            <span>{disk.usedPercentage}% used</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Sensor Data */}
-                  {machine.data && (
-                      <div className="data-grid">
-                        <div className="data-item">Temperature: {machine.data.temperature}°C</div>
-                        <div className="data-item">Pressure: {machine.data.pressure} bar</div>
-                        <div className="data-item">Speed: {machine.data.speed} rpm</div>
-                        <div className="data-item">Disk Usage: {machine.data.disk_volume}%</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+              recentlyChanged={recentlyChangedMachines.has(machine.id)}
+              popupsToOpen={popupsToOpen}
+              onPopupOpened={handlePopupOpened}
+            />
           ))}
         </MapContainer>
 
@@ -741,6 +735,20 @@ function App() {
           <h4 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>Machine Status</h4>
           <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#6c757d' }}>
             Connection: {connectionStatus}
+          </div>
+          
+          {/* Simulation Control */}
+          <div className="simulation-control">
+            <button 
+              className={`pause-button ${simulationPaused ? 'paused' : 'running'}`}
+              onClick={toggleSimulationPause}
+              title={simulationPaused ? 'Resume simulation' : 'Pause simulation'}
+            >
+              {simulationPaused ? '▶️ Resume' : '⏸️ Pause'}
+            </button>
+            <div className="simulation-status">
+              Simulation: {simulationPaused ? 'PAUSED' : 'RUNNING'}
+            </div>
           </div>
           
            <div className="status-item">
@@ -790,6 +798,103 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Markers List Window */}
+        <div className={`markers-list-window ${markersListOpen ? 'open' : 'closed'}`}>
+          <div className="markers-list-header">
+            <h3>All Machine Markers</h3>
+            <button 
+              className="close-markers-list"
+              onClick={toggleMarkersList}
+              title="Close markers list"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="markers-list-content">
+            {displayedMachines.length === 0 ? (
+              <div className="no-markers">No machines to display</div>
+            ) : (
+              <div className="location-groups">
+                {Object.entries(groupedMachines).map(([location, machines]) => {
+                  const isExpanded = expandedCountries.has(location);
+                  return (
+                    <div key={location} className="location-group">
+                      <div className="location-header" onClick={() => toggleCountryExpansion(location)}>
+                        <div className="location-title-container">
+                          <span className={`expand-icon ${isExpanded ? 'expanded' : 'collapsed'}`}>▶</span>
+                          <h4 className="location-title">
+                            🌍 {location} ({machines.length} machine{machines.length !== 1 ? 's' : ''})
+                          </h4>
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="markers-grid">
+                          {machines.map((machine) => (
+                            <div key={machine.id} className="marker-item">
+                              <div className="marker-header">
+                                <div className="marker-icon">
+                                  <div 
+                                    className={`marker-dot ${machine.status}`}
+                                    style={{
+                                      backgroundColor: machine.status === 'green' ? '#28a745' : 
+                                                     machine.status === 'yellow' ? '#ffc107' : 
+                                                     machine.status === 'red' ? '#dc3545' : 
+                                                     machine.status === 'black' ? '#000000' : '#6c757d'
+                                    }}
+                                  ></div>
+                                </div>
+                                <div className="marker-info">
+                                  <div className="marker-name">{machine.name}</div>
+                                  <div className="marker-status">{machine.status.toUpperCase()}</div>
+                                </div>
+                              </div>
+                              <div className="marker-details">
+                                <div className="marker-detail-row">
+                                  <span className="detail-label">System:</span>
+                                  <span className="detail-value">{machine.system_type || 'Unknown'}</span>
+                                </div>
+                                <div className="marker-detail-row">
+                                  <span className="detail-label">Coordinates:</span>
+                                  <span className="detail-value">{machine.latitude.toFixed(4)}, {machine.longitude.toFixed(4)}</span>
+                                </div>
+                                <div className="marker-detail-row">
+                                  <span className="detail-label">Last Seen:</span>
+                                  <span className="detail-value">{new Date(machine.last_seen).toLocaleString()}</span>
+                                </div>
+                                {machine.data && (
+                                  <div className="marker-sensor-data">
+                                    <div className="sensor-row">
+                                      <span>🌡️ {machine.data.temperature}°C</span>
+                                      <span>⚡ {machine.data.pressure} bar</span>
+                                    </div>
+                                    <div className="sensor-row">
+                                      <span>🔄 {machine.data.speed} rpm</span>
+                                      <span>💾 {machine.data.disk_volume}%</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Markers List Toggle Button */}
+        <button 
+          className="markers-list-toggle"
+          onClick={toggleMarkersList}
+          title={markersListOpen ? 'Hide markers list' : 'Show markers list'}
+        >
+          {markersListOpen ? '📋' : '📋'}
+        </button>
       </div>
     </div>
   );
