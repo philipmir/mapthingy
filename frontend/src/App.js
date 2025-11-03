@@ -18,6 +18,7 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import './styles.css';
+import { API_CONFIG, getApiUrl } from './apiConfig';
 
 
 // Fix for default markers in react-leaflet
@@ -102,13 +103,13 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   const isOnlineStatus = status === 'green';
   
   // Create pulsing border for recently changed machines
-  const shouldPulseRed = isAlertStatus && recentlyChanged;
+  const shouldPulseGrey = isAlertStatus && recentlyChanged;
   const shouldPulseGreen = isOnlineStatus && recentlyChanged;
-  const shouldPulse = shouldPulseRed || shouldPulseGreen;
+  const shouldPulse = shouldPulseGrey || shouldPulseGreen;
   
-           const pulseClass = shouldPulse ? (shouldPulseRed ? 'pulse-red' : 'pulse-green') : '';
-           const pulseColor = shouldPulseRed ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 0, 0.8)';
-           const pulseAnimation = shouldPulseRed ? 'pulse-individual' : 'pulse-green';
+           const pulseClass = shouldPulse ? (shouldPulseGrey ? 'pulse-grey' : 'pulse-green') : '';
+           const pulseColor = shouldPulseGrey ? 'rgba(108, 117, 125, 0.8)' : 'rgba(0, 255, 0, 0.8)';
+           const pulseAnimation = shouldPulseGrey ? 'pulse-individual' : 'pulse-green';
            const pulseStyle = shouldPulse ? `
              border: ${borderWidth} solid ${pulseColor} !important;
              animation: ${pulseAnimation} 1s ease-in-out infinite;
@@ -286,13 +287,13 @@ function App() {
   const [systemFilter, setSystemFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
   const [alertFlash, setAlertFlash] = useState(false);
-  const [flashColor, setFlashColor] = useState('red');
+  const [flashColor, setFlashColor] = useState('grey');
   const [alertedMachines, setAlertedMachines] = useState(new Set());
   const [recentlyChangedMachines, setRecentlyChangedMachines] = useState(new Set());
-  // const [machinePreviousStatus, setMachinePreviousStatus] = useState(new Map());
   const [lastFlashTime, setLastFlashTime] = useState(0);
   const [popupsToOpen, setPopupsToOpen] = useState(new Set());
   const [simulationPaused, setSimulationPaused] = useState(true);
+  const [simulationControlsOpen, setSimulationControlsOpen] = useState(false);
   const [markersListOpen, setMarkersListOpen] = useState(false);
   const [expandedCountries, setExpandedCountries] = useState(new Set());
 
@@ -303,6 +304,11 @@ function App() {
       newSet.delete(machineId);
       return newSet;
     });
+  };
+
+  // Function to open popup for a specific machine (from menu view)
+  const openMachinePopup = (machineId) => {
+    setPopupsToOpen(prev => new Set([...prev, machineId]));
   };
 
   // Toggle simulation pause/resume
@@ -336,24 +342,46 @@ function App() {
   // PRODUCTION: This is production ready and handles real API calls
   // PRODUCTION: Consider adding loading states, error handling, and retry logic
 
-  // Load initial machine data
+  // Load initial machine data from multiple APIs
   useEffect(() => {
-    const fetchMachines = async () => {
+    const fetchAllMachines = async () => {
       try {
-        console.log('Fetching machines from API...');
-        // TODO: Update API endpoint for production
-        // TODO: Add authentication headers
-        // TODO: Add error handling and retry logic
-        const response = await axios.get('/api/machines');
-        console.log('API Response:', response.data);
-        setMachines(response.data);
+        console.log('Fetching machines from multiple APIs...');
+        const allMachines = [];
+        
+        // Fetch from all machine APIs
+        const promises = API_CONFIG.MACHINE_APIS.map(async (apiUrl) => {
+          try {
+            const response = await axios.get(getApiUrl(API_CONFIG.ENDPOINTS.MACHINES, apiUrl), {
+              timeout: API_CONFIG.TIMEOUT
+            });
+            console.log(`Fetched from ${apiUrl}:`, response.data);
+            // Handle both single machine (object) and array of machines
+            if (Array.isArray(response.data)) {
+              return response.data;
+            } else {
+              return [response.data];
+            }
+          } catch (error) {
+            console.error(`Failed to fetch from ${apiUrl}:`, error.message);
+            return []; // Return empty array for failed requests
+          }
+        });
+        
+        const results = await Promise.all(promises);
+        // Flatten all results into single array
+        const combinedMachines = results.flat();
+        
+        console.log('Combined machines:', combinedMachines);
+        setMachines(combinedMachines);
+        setConnectionStatus(`Connected (${combinedMachines.length} machines from ${API_CONFIG.MACHINE_APIS.length} APIs)`);
       } catch (error) {
         console.error('Failed to fetch machines:', error);
-        // TODO: Add proper error handling and user notification
+        setConnectionStatus(`Error: ${error.message}`);
       }
     };
 
-    fetchMachines();
+    fetchAllMachines();
   }, []);
 
   // =============================================================================
@@ -365,76 +393,54 @@ function App() {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    // TODO: Update WebSocket URL for production
+    // Note: The test API doesn't have WebSocket support
+    // For now, we'll skip WebSocket and rely on polling
+    // TODO: Add WebSocket support to test API or use polling
     // TODO: Add authentication for WebSocket connections
     // TODO: Add reconnection logic and error handling
-    const newSocket = new WebSocket('ws://127.0.0.1:8000/ws');
     
-    newSocket.onopen = () => {
-      setConnectionStatus('Connected');
-      console.log('Connected to server');
-    };
-
-    newSocket.onclose = () => {
-      setConnectionStatus('Disconnected');
-      console.log('Disconnected from server');
-    };
-
-    newSocket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        console.log('RECEIVED:', message);
-        if (message.type === 'machine_update') {
-          // Skip updates if simulation is paused
-          if (simulationPaused) {
-            console.log(`SIMULATION PAUSED: Skipping update for machine ${message.machine_id}`);
-            return;
-          }
+    // Use polling instead for now - fetch from all machine APIs
+    const pollInterval = setInterval(() => {
+      const fetchAllMachines = async () => {
+        try {
+          const allMachines = [];
           
-          console.log(`UPDATING: Machine ${message.machine_id} to ${message.status}`);
+          // Fetch from all machine APIs
+          const promises = API_CONFIG.MACHINE_APIS.map(async (apiUrl) => {
+            try {
+              const response = await axios.get(getApiUrl(API_CONFIG.ENDPOINTS.MACHINES, apiUrl), {
+                timeout: API_CONFIG.TIMEOUT
+              });
+              // Handle both single machine (object) and array of machines
+              if (Array.isArray(response.data)) {
+                return response.data;
+              } else {
+                return [response.data];
+              }
+            } catch (error) {
+              console.error(`Failed to fetch from ${apiUrl}:`, error.message);
+              return []; // Return empty array for failed requests
+            }
+          });
           
-          // Track previous status for this machine
-          // setMachinePreviousStatus(prev => {
-          //   const newMap = new Map(prev);
-          //   newMap.set(message.machine_id, message.status);
-          //   return newMap;
-          // });
+          const results = await Promise.all(promises);
+          const combinedMachines = results.flat();
           
-          // Track this machine as recently changed for pulsing animation
-          setRecentlyChangedMachines(prev => new Set([...prev, message.machine_id]));
-          
-          // Remove from recently changed after 30 seconds
-          setTimeout(() => {
-            setRecentlyChangedMachines(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(message.machine_id);
-              return newSet;
-            });
-          }, 30000);
-          
-          setMachines(prevMachines => 
-            prevMachines.map(machine => 
-              machine.id === message.machine_id 
-                ? { 
-                    ...machine, 
-                    status: message.status, 
-                    data: { ...machine.data, ...message.data },
-                    last_seen: new Date(message.timestamp)
-                  }
-                : machine
-            )
-          );
+          setMachines(combinedMachines);
+          setConnectionStatus(`Connected (${combinedMachines.length} machines)`);
+        } catch (error) {
+          console.error('Failed to fetch machines:', error);
+          setConnectionStatus(`Error: ${error.message}`);
         }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-        // TODO: Add proper error handling and user notification
-      }
-    };
-
+      };
+      fetchAllMachines();
+    }, API_CONFIG.POLL_INTERVAL); // Poll every 5 seconds
+    
+    // Return cleanup function
     return () => {
-      newSocket.close();
+      clearInterval(pollInterval);
     };
-  }, [simulationPaused]);
+  }, []);
 
   // Filter machines based on selected filters - SPECIFICATION COMPLIANT
   const filteredMachines = useMemo(() => {
@@ -543,7 +549,7 @@ function App() {
     if (machinesNeedingAlert.length > 0) {
       console.log(`ALERT TRIGGERED: ${machinesNeedingAlert.length} machines need attention!`);
       // Trigger flash effect
-      setFlashColor('red');
+      setFlashColor('grey');
       setAlertFlash(true);
       setTimeout(() => setAlertFlash(false), 2000);
 
@@ -593,9 +599,9 @@ function App() {
       setLastFlashTime(now);
       setTimeout(() => setAlertFlash(false), 2000);
     } else if (newlyChangedToAlert.length > 0 && timeSinceLastFlash > 3000) {
-      console.log(`RED FLASH TRIGGERED: ${newlyChangedToAlert.length} machines just changed to alert status!`);
-      // Trigger red flash effect for newly changed machines
-      setFlashColor('red');
+      console.log(`GREY FLASH TRIGGERED: ${newlyChangedToAlert.length} machines just changed to alert status!`);
+      // Trigger grey flash effect for newly changed machines
+      setFlashColor('grey');
       setAlertFlash(true);
       setLastFlashTime(now);
       setTimeout(() => setAlertFlash(false), 2000);
@@ -732,22 +738,30 @@ function App() {
         </MapContainer>
 
         <div className="status-panel">
-          <h4 style={{ margin: '0 0 1rem 0', color: '#2c3e50' }}>Machine Status</h4>
+          <h4 style={{ margin: '0 0 1rem 0', color: '#8B1538' }}>Machine Status</h4>
           <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#6c757d' }}>
             Connection: {connectionStatus}
           </div>
           
-          {/* Simulation Control */}
-          <div className="simulation-control">
-            <button 
-              className={`pause-button ${simulationPaused ? 'paused' : 'running'}`}
-              onClick={toggleSimulationPause}
-              title={simulationPaused ? 'Resume simulation' : 'Pause simulation'}
-            >
-              {simulationPaused ? '▶️ Resume' : '⏸️ Pause'}
-            </button>
-            <div className="simulation-status">
-              Simulation: {simulationPaused ? 'PAUSED' : 'RUNNING'}
+          {/* Simulation Control - Collapsible */}
+          <div className="simulation-section">
+            <div className="simulation-header" onClick={() => setSimulationControlsOpen(!simulationControlsOpen)}>
+              <span className="simulation-title">🎮 Simulation Controls</span>
+              <span className={`toggle-icon ${simulationControlsOpen ? 'open' : ''}`}>▼</span>
+            </div>
+            <div className={`simulation-content ${simulationControlsOpen ? '' : 'closed'}`}>
+              <div className="simulation-control">
+                <button 
+                  className={`pause-button ${simulationPaused ? 'paused' : 'running'}`}
+                  onClick={toggleSimulationPause}
+                  title={simulationPaused ? 'Resume simulation' : 'Pause simulation'}
+                >
+                  {simulationPaused ? '▶️ Resume' : '⏸️ Pause'}
+                </button>
+                <div className="simulation-status">
+                  Simulation: {simulationPaused ? 'PAUSED' : 'RUNNING'}
+                </div>
+              </div>
             </div>
           </div>
           
@@ -773,7 +787,7 @@ function App() {
            </div>
           
           <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
-            <h5 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50', fontSize: '0.9rem' }}>System Types:</h5>
+            <h5 style={{ margin: '0 0 0.5rem 0', color: '#8B1538', fontSize: '0.9rem' }}>System Types:</h5>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
               <div style={{
                 width: '16px',
@@ -831,7 +845,12 @@ function App() {
                       {isExpanded && (
                         <div className="markers-grid">
                           {machines.map((machine) => (
-                            <div key={machine.id} className="marker-item">
+                            <div 
+                              key={machine.id} 
+                              className="marker-item"
+                              onClick={() => openMachinePopup(machine.id)}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <div className="marker-header">
                                 <div className="marker-icon">
                                   <div 

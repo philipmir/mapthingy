@@ -14,39 +14,39 @@ IMPORTANT: When transitioning to production:
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import asyncio
 import json
 import random
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import uvicorn
 
+# Import configuration and API client
+from config import settings
+from api_client import create_api_client, MachineAPIClient
+
 # =============================================================================
-# PRODUCTION CONFIGURATION
+# APPLICATION SETUP
 # =============================================================================
-# TODO: Move these to environment variables in production
-# TODO: Add proper authentication middleware
-# TODO: Add rate limiting and security headers
-# TODO: Configure production database connection
 
 app = FastAPI(title="Global Machine Monitor API", version="1.0.0")
 
 # =============================================================================
-# CORS CONFIGURATION - UPDATE FOR PRODUCTION
+# CORS CONFIGURATION
 # =============================================================================
-# TODO: Restrict CORS origins in production to specific domains
-# TODO: Remove wildcard methods and headers for security
-# TODO: Add proper CORS preflight handling
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # PRODUCTION: Replace with actual frontend domains
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],  # PRODUCTION: Specify exact methods needed
-    allow_headers=["*"],  # PRODUCTION: Specify exact headers needed
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+# =============================================================================
+# GLOBAL API CLIENT (for real API mode)
+# =============================================================================
+api_client: Optional[MachineAPIClient] = None
 
 # =============================================================================
 # WEBSOCKET CONNECTION MANAGER - PRODUCTION READY
@@ -71,8 +71,6 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
         # TODO: Log disconnection in production
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
 
     async def broadcast(self, message: str):
         """Broadcast message to all connected clients - PRODUCTION READY"""
@@ -667,30 +665,43 @@ async def root():
 @app.get("/api/machines")
 async def get_machines():
     """
-    Get all machine data - PRODUCTION READY
+    Get all machine data - supports both mock and real API modes
     
-    PRODUCTION: Replace SAMPLE_MACHINES with:
-    - Real database query using database.py
-    - Real API calls using api_client.py
-    - Cached data for performance
+    Mode is controlled by USE_MOCK_DATA environment variable:
+    - mock: Returns simulated data
+    - real: Fetches from real API
     """
-    # TODO: Replace with real database query
-    # machines = await db_manager.get_all_machines()
-    return SAMPLE_MACHINES
+    if settings.is_real_mode and api_client:
+        # Use real API
+        try:
+            machines = await api_client.get_all_machines()
+            return machines
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch from real API: {str(e)}")
+    else:
+        # Use mock data
+        return SAMPLE_MACHINES
 
 @app.get("/api/machines/{machine_id}")
 async def get_machine(machine_id: str):
     """
-    Get specific machine data - PRODUCTION READY
-    
-    PRODUCTION: Replace with real database query
+    Get specific machine data - supports both mock and real API modes
     """
-    # TODO: Replace with real database query
-    # machine = await db_manager.get_machine_by_id(machine_id)
-    machine = next((m for m in SAMPLE_MACHINES if m["id"] == machine_id), None)
-    if not machine:
-        raise HTTPException(status_code=404, detail="Machine not found")
-    return machine
+    if settings.is_real_mode and api_client:
+        # Use real API
+        try:
+            machine = await api_client.get_machine_status(machine_id)
+            if not machine:
+                raise HTTPException(status_code=404, detail="Machine not found")
+            return machine
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch from real API: {str(e)}")
+    else:
+        # Use mock data
+        machine = next((m for m in SAMPLE_MACHINES if m["id"] == machine_id), None)
+        if not machine:
+            raise HTTPException(status_code=404, detail="Machine not found")
+        return machine
 
 @app.post("/api/machines/{machine_id}/status")
 async def update_machine_status(machine_id: str, update: MachineUpdate):
@@ -753,14 +764,15 @@ async def websocket_endpoint(websocket: WebSocket):
 
 async def simulate_machine_updates():
     """
-    SIMULATION FUNCTION - REMOVE IN PRODUCTION
+    SIMULATION FUNCTION - Only runs in MOCK mode
     
     This function simulates machine status changes for demo purposes.
-    In production, this should be replaced with:
-    1. Real WebSocket connections to machine APIs
-    2. Real machine data polling
-    3. Real status update handling
+    In real API mode, this is replaced with actual API polling.
     """
+    if not settings.is_mock_mode:
+        print("SIMULATION: Disabled (running in REAL API mode)")
+        return
+    
     # First, ensure all machines start as green (active with no alarms)
     for machine in SAMPLE_MACHINES:
         machine["status"] = "green"
@@ -772,7 +784,7 @@ async def simulate_machine_updates():
     print("SIMULATION: All machines set to green status (active with no alarms)")
     
     while True:
-        await asyncio.sleep(15)  # Update every 15 seconds
+        await asyncio.sleep(settings.simulation_update_interval)  # Update interval from config
         
         # Find machines that are currently in alert status
         alert_machines = [m for m in SAMPLE_MACHINES if m["status"] in ["yellow", "red", "black", "grey"]]
@@ -800,8 +812,8 @@ async def simulate_machine_updates():
                 print(f"BROADCASTING: Sending recovery update for {machine['name']} to {len(manager.active_connections)} clients")
                 await manager.broadcast(json.dumps(update_message))
             
-            # Wait 30 seconds before creating new alert to ensure clean separation
-            await asyncio.sleep(30)
+            # Wait before creating new alert to ensure clean separation
+            await asyncio.sleep(settings.simulation_recovery_interval)
         else:
             # No alert machines, pick ONE random machine to change to alert status
             machine = random.choice(SAMPLE_MACHINES)
@@ -861,22 +873,63 @@ async def simulate_machine_updates():
 @app.on_event("startup")
 async def startup_event():
     """
-    Application startup event - PRODUCTION CONFIGURATION NEEDED
+    Application startup event - configures based on mode
     
-    PRODUCTION: Replace simulation with:
-    1. Real database initialization
-    2. Real API client connections
-    3. Real WebSocket connections to machines
-    4. Health check endpoints
-    5. Monitoring setup
+    In MOCK mode: Starts simulation
+    In REAL mode: Initializes API client and starts polling
     """
-    # TODO: Initialize database connection in production
-    # TODO: Initialize API clients in production
-    # TODO: Start real WebSocket connections to machines
-    # TODO: Add health check endpoints
+    global api_client
     
-    # SIMULATION ONLY - REMOVE IN PRODUCTION
+    if settings.is_real_mode:
+        # Initialize real API client
+        print("Initializing Real API client...")
+        api_client = create_api_client()
+        if api_client:
+            # Test connection
+            health = await api_client.health_check()
+            print(f"API Health: {health}")
+            
+            # Start real-time polling task
+            asyncio.create_task(poll_real_api())
+        else:
+            print("No API credentials configured, falling back to mock mode")
+            asyncio.create_task(simulate_machine_updates())
+    else:
+        # Use mock/simulation mode
+        print("Starting simulation mode...")
     asyncio.create_task(simulate_machine_updates())
+
+async def poll_real_api():
+    """
+    Poll real API for machine updates (used in real mode)
+    """
+    print("Starting real API polling...")
+    
+    while True:
+        try:
+            if api_client:
+                # Fetch all machines
+                machines = await api_client.get_all_machines()
+                
+                # Check each machine for status changes and broadcast
+                for machine in machines:
+                    # Broadcast update to all connected clients
+                    update_message = {
+                        "type": "machine_update",
+                        "machine_id": machine.get("id"),
+                        "status": machine.get("status"),
+                        "data": machine.get("data", {}),
+                        "timestamp": machine.get("last_seen", datetime.now().isoformat())
+                    }
+                    await manager.broadcast(json.dumps(update_message))
+                
+                print(f"Polled {len(machines)} machines from real API")
+                
+        except Exception as e:
+            print(f"Error polling real API: {e}")
+        
+        # Poll every 10 seconds
+        await asyncio.sleep(10)
 
 if __name__ == "__main__":
     # PRODUCTION: Use proper ASGI server (Gunicorn + Uvicorn)

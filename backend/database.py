@@ -1,10 +1,9 @@
 """
 Database models and operations for machine monitoring
 """
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Text, JSON
+from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import os
 import logging

@@ -1,189 +1,50 @@
 # Global Machine Monitor
 
-A real-time dashboard for monitoring machine status worldwide. Built with React frontend and Python FastAPI backend, featuring multiple map designs, alert systems, and comprehensive analytics.
-
-## ✨ Features
-
-### 🗺️ Interactive Mapping
-- **5 Map Designs**: Original, Dark, Minimalist, Industrial, and Modern Flat themes
-- **Style Switcher**: Collapsible floating button to switch between designs
-- **Country-based Clustering**: Machines grouped by country with adjustable spacing
-- **Custom Markers**: Different shapes and sizes for different system types
-- **Real-time Updates**: Live status changes with WebSocket connections
-
-### 🚨 Alert System
-- **Automatic Detection**: Alerts for warning, offline, and error statuses
-- **Screen Flash**: Full-screen strobe effect (red for alerts, green for recoveries)
-- **Pulsing Animations**: 30-second pulsing borders around recently changed machines
-- **Priority System**: Green recovery alerts take priority over red alert flashes
-- **Top-layer Visibility**: Pulsing animations appear above all other elements
-
-### 📊 Analytics Dashboard
-- **Collapsible Panels**: Compact design that doesn't block the map
-- **Real-time Metrics**: Total machines, uptime percentage, average temperature, pressure, speed, and disk volume
-- **Advanced Filtering**: Filter by status, system type, and country
-- **Live Updates**: Metrics update automatically with machine status changes
-
-### 🔧 Machine Data
-- **Status Types**: Online (green), Warning (yellow), Offline (red), Error (purple)
-- **System Types**: Automated System 4000 (circles) and Mini-System 4000 (squares)
-- **Data Points**: Temperature, pressure, speed, and disk volume tracking
-- **Interactive Popups**: Click machines for detailed information
-
-### 🎨 Visual Design
-- **Fullscreen Experience**: No scrollbars, full viewport usage
-- **Responsive Layout**: Works on all screen sizes
-- **Smooth Animations**: Pulsing effects and transitions
-- **Clean Interface**: Minimalist design that doesn't interfere with monitoring
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React, Leaflet, Styled Components, Native WebSocket API
-- **Backend**: Python FastAPI, WebSockets, SQLAlchemy, Pydantic
-- **Real-time**: WebSocket connections for live updates
-- **Maps**: OpenStreetMap tiles with custom markers
-- **Styling**: CSS-in-JS with styled-components
+A real-time dashboard for monitoring machine status worldwide. Built with React frontend and Python FastAPI backend, featuring interactive world maps, WebSocket connections, and comprehensive analytics.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js (v16 or higher)
-- Python (v3.8 or higher)
-- pip
+1. **Install dependencies:**
+   ```bash
+   npm run install-all
+   ```
 
-### Installation
-
-1. **Install all dependencies:**
-```bash
-npm run install-all
-```
-
-2. **Start both frontend and backend:**
-```bash
-npm run dev
-```
+2. **Start the application:**
+   ```bash
+   npm run dev
+   ```
 
 This will start:
 - Backend API server on http://localhost:8000
 - React frontend on http://localhost:3000
 
-### Individual Commands
-
-**Start only the backend:**
-```bash
-npm run server
-```
-
-**Start only the frontend:**
-```bash
-npm run client
-```
-
-## 📡 API Endpoints
-
-- `GET /api/machines` - Get all machine data
-- `GET /api/machines/{id}` - Get specific machine data
-- `POST /api/machines/{id}/status` - Update machine status
-- `WebSocket /ws` - Real-time updates
-
-## 🎯 Machine Status Types
-
-- 🟢 **Online**: Machine running normally (green dot, green pulse on recovery)
-- 🟡 **Warning**: Machine needs attention (yellow dot, red pulse on alert)
-- 🔴 **Offline**: Machine not responding (red dot, red pulse on alert)
-- 🟣 **Error**: Critical machine error (purple dot, red pulse on alert)
-
-## 🌍 Sample Data
-
-The application includes sample machines worldwide:
-- **Sweden**: Stockholm, Gothenburg, Malmö
-- **Germany**: Berlin, Munich
-- **UK**: London, Manchester
-- **USA**: New York, Los Angeles
-- **China**: Beijing, Shanghai
-- **And many more locations globally**
-
-## 🎨 Map Designs
-
-### 1. **Original** - Classic clean design
-### 2. **Dark** - Dark theme with glowing effects
-### 3. **Minimalist** - Clean, simple interface
-### 4. **Industrial** - Technical, professional look
-### 5. **Modern Flat** - Contemporary flat design
-
-Switch between designs using the floating style switcher button (collapsed by default).
-
-## 🔄 Simulation System
-
-The application includes a comprehensive simulation system:
-
-- **All machines start online** (green status)
-- **One machine changes to alert** at a time (warning/offline/error)
-- **Automatic recovery** after 15 seconds (back to online)
-- **Clean separation** between alert and recovery cycles
-- **30-second delay** between recovery and new alerts
-- **Real-time updates** via WebSocket
-
-## 📈 Analytics Features
-
-- **Total Machines**: Count of all monitored machines
-- **Uptime Percentage**: Overall system health
-- **Average Temperature**: Mean temperature across all machines
-- **Average Pressure**: Mean pressure across all machines
-- **Average Speed**: Mean speed across all machines
-- **Average Disk Volume**: Mean disk usage across all machines
-
-## 🔧 Integration
-
-To connect your real machines:
-
-1. **Update machine data** in `backend/main.py`
-2. **Implement data collection** from your machine APIs
-3. **Use the API endpoints** to report status changes
-4. **Connect to WebSocket** for real-time updates
-5. **Remove simulation code** in production
-
 ## 📚 Documentation
 
-- **API Integration Guide**: `API_INTEGRATION_GUIDE.md`
-- **API Documentation**: `API_DOCUMENTATION.md`
-- **Production Deployment**: `PRODUCTION_DEPLOYMENT_GUIDE.md`
-- **Design Showcase**: `DESIGN_SHOWCASE.md`
-- **Style Switcher Guide**: `STYLE_SWITCHER_GUIDE.md`
+All documentation is located in the `docs/` folder:
 
-## 🎮 Usage
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in minutes
+- **[API Switching Guide](docs/README_API_SWITCHING.md)** - Switch between mock and real data
+- **[Comprehensive Guide](docs/SWITCHING_GUIDE.md)** - Detailed switching instructions
+- **[API Setup Summary](docs/API_SETUP_SUMMARY.md)** - Complete setup overview
+- **[Architecture Map](docs/CODE_ARCHITECTURE_MAP.md)** - System architecture diagram
+- **[Touchscreen Guide](docs/TOUCHSCREEN_GUIDE.md)** - Touchscreen interface guide
 
-1. **Open the application** in your browser
-2. **Watch the simulation** - machines will change status automatically
-3. **Try the style switcher** - click the floating button to change designs
-4. **Open analytics** - click the analytics button to see metrics
-5. **Filter data** - use the filter options to focus on specific machines
-6. **Click machines** - click on any machine marker for detailed information
+## 🛠️ Tech Stack
 
-## 🚨 Alert System Details
+- **Frontend**: React, Leaflet, WebSocket API
+- **Backend**: Python FastAPI, WebSockets, SQLAlchemy
+- **Database**: PostgreSQL with 2-month retention
+- **Real-time**: WebSocket connections for live updates
 
-- **Screen Flash**: 2-second full-screen strobe effect
-- **Pulsing Borders**: 30-second pulsing animation around changed machines
-- **Color Coding**: Red for alerts, green for recoveries
-- **Priority System**: Green flashes take priority over red flashes
-- **Debounce Protection**: 3-second delay between flash triggers
+## 🎯 Features
 
-## 🔄 Development
-
-The backend includes simulated machine status changes every 15 seconds for demo purposes. The simulation:
-
-- Starts all machines as online
-- Changes one machine to alert status
-- Automatically recovers after 15 seconds
-- Waits 30 seconds before creating new alerts
-- Provides clean separation between cycles
-
-**Remove the `simulate_machine_updates()` function in production.**
+- **Interactive World Map** with custom markers
+- **Real-time Status Updates** via WebSocket
+- **Alert System** with screen flashes and animations
+- **Analytics Dashboard** with filtering and metrics
+- **Global Machine Coverage** across multiple countries
+- **Dual Machine Types** (Automated System 4000 & Mini-System 4000)
 
 ## 📄 License
 
 MIT
-
----
-
-**Built with ❤️ for global machine monitoring**
