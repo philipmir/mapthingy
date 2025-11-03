@@ -24,6 +24,8 @@ except Exception:
 app = FastAPI(title=f"Machine API - {MACHINE_NAME} ({MACHINE_ID})")
 
 # Allow CORS from your main PC
+# SECURITY NOTE: In production, replace ["*"] with specific allowed origins
+# Example: allow_origins=["http://192.168.1.100:3000", "https://yourdomain.com"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify exact IPs
@@ -52,7 +54,8 @@ def root():
     return {
         "message": f"Machine API - {MACHINE_NAME} ({MACHINE_ID})",
         "status": "running",
-        "total_machines": len(SAMPLE_MACHINES)
+        "total_machines": len(SAMPLE_MACHINES),
+        "system_type": SYSTEM_TYPE
     }
 
 @app.get("/machines")
