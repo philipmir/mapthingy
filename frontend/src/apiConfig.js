@@ -12,7 +12,20 @@ export const API_CONFIG = {
   ENDPOINTS: {
     MACHINES: '/machines',
     HEALTH: '/health',
-    ROOT: '/'
+    ROOT: '/',
+    STATUS_UPDATE: '/machines/'  // Append {machine_id}/status
+  },
+  
+  // Simulation settings
+  SIMULATION: {
+    UPDATE_INTERVAL: 10000, // Update every 10 seconds when simulation is running
+    STATUS_CHANGE_PROBABILITY: 0.40, // 40% chance to change status each update
+    DATA_VARIATION: {
+      temperature: { min: -2, max: 2 }, // ±2°C variation (no visual effect)
+      pressure: { min: -0.3, max: 0.3 }, // ±0.3 bar variation (triggers visual effect at ≥0.1)
+      speed: { min: -75, max: 75 }, // ±75 rpm variation (triggers visual effect at ≥25)
+      disk_volume: { min: -1, max: 1 } // ±1% variation (no visual effect)
+    }
   },
   
   // Polling interval for real-time updates (milliseconds)

@@ -1,6 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from typing import Optional, Dict, Any
+import os
+import json
+from pathlib import Path
 
 # Load machine-specific configuration
 try:
@@ -82,19 +86,87 @@ def health_check():
     }
 
 @app.post("/machines/{machine_id}/status")
-def update_machine_status(machine_id: str, status: str, data: dict = None):
-    """Update machine status (for testing)"""
+def update_machine_status(
+    machine_id: str,
+    status: Optional[str] = Query(None),
+    data: Optional[Dict[str, Any]] = Body(None)
+):
+    """Update machine status (for testing/simulation)"""
     machine = next((m for m in SAMPLE_MACHINES if m["id"] == machine_id), None)
     if not machine:
         return {"error": "Machine not found"}
     
-    machine["status"] = status
+    # Update status if provided
+    if status:
+        machine["status"] = status
+    
+    # Update last_seen timestamp
     machine["last_seen"] = datetime.now().isoformat()
     
+    # Update data if provided
     if data:
-        machine["data"].update(data)
+        if isinstance(data, dict):
+            machine["data"].update(data)
     
-    return {"message": f"Machine {machine_id} status updated to {status}", "machine": machine}
+    return {"message": f"Machine {machine_id} status updated to {machine['status']}", "machine": machine}
+
+# =============================================================================
+# LOGGING ENDPOINT
+# =============================================================================
+
+@app.post("/logs")
+def save_log(log_entry: Dict[str, Any]):
+    """Save machine log entry to file"""
+    try:
+        # Create logs directory in root if it doesn't exist
+        logs_dir = Path(__file__).parent.parent / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        
+        # Create log file for today (one file per day)
+        today = datetime.now().strftime("%Y-%m-%d")
+        log_file = logs_dir / f"machine_logs_{today}.json"
+        
+        # Read existing logs
+        logs = []
+        if log_file.exists():
+            try:
+                with open(log_file, 'r', encoding='utf-8') as f:
+                    logs = json.load(f)
+            except:
+                logs = []
+        
+        # Add new log entry
+        logs.append(log_entry)
+        
+        # Keep only last 1000 entries per day
+        logs = logs[-1000:]
+        
+        # Write back to file
+        with open(log_file, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, indent=2, ensure_ascii=False)
+        
+        return {"message": "Log saved successfully", "log_file": str(log_file)}
+    except Exception as e:
+        return {"error": f"Failed to save log: {str(e)}"}
+
+@app.get("/logs")
+def get_logs(limit: int = 50):
+    """Get recent log entries"""
+    try:
+        logs_dir = Path(__file__).parent.parent / "logs"
+        today = datetime.now().strftime("%Y-%m-%d")
+        log_file = logs_dir / f"machine_logs_{today}.json"
+        
+        if not log_file.exists():
+            return {"logs": []}
+        
+        with open(log_file, 'r', encoding='utf-8') as f:
+            logs = json.load(f)
+        
+        # Return most recent entries
+        return {"logs": logs[-limit:]}
+    except Exception as e:
+        return {"error": f"Failed to read logs: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -260,6 +260,130 @@ body {
 }
 
 /* =============================================================================
+   MACHINE LOGS
+   ============================================================================= */
+
+.machine-logs-section {
+  margin-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  padding-top: 0.75rem;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 0.5rem;
+}
+
+.logs-header:hover {
+  background: rgba(139, 21, 56, 0.05);
+  border-radius: 4px;
+}
+
+.logs-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8B1538;
+}
+
+.logs-content {
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.logs-content.closed {
+  display: none;
+}
+
+.logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.log-entry {
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #8B1538;
+  font-size: 0.75rem;
+}
+
+.log-entry.empty {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  border-left: none;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.log-time {
+  color: #6c757d;
+  font-size: 0.7rem;
+}
+
+.log-source {
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.log-source.simulation {
+  background: #ffc107;
+  color: #212529;
+}
+
+.log-source.polling {
+  background: #17a2b8;
+  color: white;
+}
+
+.log-source.manual {
+  background: #28a745;
+  color: white;
+}
+
+.log-machine {
+  font-weight: 600;
+  color: #8B1538;
+  margin-bottom: 0.25rem;
+}
+
+.log-details {
+  color: #495057;
+  font-size: 0.7rem;
+}
+
+.log-change {
+  margin-top: 0.15rem;
+}
+
+.log-old {
+  color: #dc3545;
+  text-decoration: line-through;
+}
+
+.log-new {
+  color: #28a745;
+  font-weight: 600;
+}
+
+/* =============================================================================
    MACHINE POPUP
    ============================================================================= */
 
@@ -319,15 +443,23 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .data-item {
   background: #fafafa;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border: 1px solid #e0e0e0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .system-info-section {
@@ -501,7 +633,19 @@ body {
 }
 
 .alert-flash.flashing.green {
-  background: rgba(0, 255, 0, 0.3);
+  background: rgba(40, 167, 69, 0.3);
+}
+
+.alert-flash.flashing.yellow {
+  background: rgba(255, 193, 7, 0.3);
+}
+
+.alert-flash.flashing.red {
+  background: rgba(220, 53, 69, 0.3);
+}
+
+.alert-flash.flashing.black {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 @keyframes strobe {
@@ -538,16 +682,14 @@ body {
   }
 }
 
-/* Individual pulsing animation for newly changed machines */
+/* Individual pulsing animation for newly changed machines - matches marker color */
 @keyframes pulse-individual {
   0%, 100% { 
-    border: 3px solid rgba(108, 117, 125, 0.8);
-    box-shadow: 0 0 0 0 rgba(108, 117, 125, 0.7);
+    box-shadow: 0 0 0 0 currentColor;
     z-index: 99999 !important;
   }
   50% { 
-    border: 6px solid rgba(108, 117, 125, 1);
-    box-shadow: 0 0 0 12px rgba(108, 117, 125, 0.4);
+    box-shadow: 0 0 0 12px rgba(0, 0, 0, 0);
     z-index: 99999 !important;
   }
 }
@@ -635,6 +777,33 @@ body {
   background-color: #e0a800;
   border-color: #e0a800;
   transform: translateY(-1px);
+}
+
+.random-change-button {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #8B1538;
+  color: white;
+  border: 1px solid #8B1538;
+}
+
+.random-change-button:hover:not(:disabled) {
+  background-color: #6a0f2a;
+  border-color: #6a0f2a;
+  transform: translateY(-1px);
+}
+
+.random-change-button:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .pause-button.paused {

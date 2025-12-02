@@ -51,9 +51,17 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   let shape = 'circle'; // Default shape
   let size = 20;
   
+  // Normalize status to lowercase for consistent comparison
+  const normalizedStatus = (status || '').toLowerCase();
+  
+  // Debug logging for machine 107
+  if (machineId && (machineId.includes('107') || machineId.includes('INHOUSE107'))) {
+    console.log(`createCustomIcon for ${machineId}: status=${status}, normalizedStatus=${normalizedStatus}, recentlyChanged=${recentlyChanged}`);
+  }
+  
   // Set color based on status - SPECIFICATION COMPLIANT
   // Grey: Not connected to SOSON, Black: System not accessible, Green: Active with no alarms, Yellow: Active with warnings, Red: Active with errors
-  switch (status) {
+  switch (normalizedStatus) {
     case 'grey': // Not connected to SOSON
       color = '#6c757d';
       break;
@@ -83,6 +91,7 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
       break;
     default:
       color = '#6c757d'; // Default to grey
+      console.warn(`Unknown status: ${status}, defaulting to grey`);
   }
   
   // Set shape and size based on system type
@@ -97,25 +106,82 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
   const borderRadius = shape === 'circle' ? '50%' : '4px';
   const borderWidth = systemType === 'Automated System 4000' ? '4px' : '3px';
   
-  // Check if this is an alert status that should flash - SPECIFICATION COMPLIANT
-  const alertStatuses = ['yellow', 'red', 'black', 'grey'];
-  const isAlertStatus = alertStatuses.includes(status);
-  const isOnlineStatus = status === 'green';
+  // Create pulsing border for recently changed machines - matches marker color
+  const shouldPulse = recentlyChanged;
   
-  // Create pulsing border for recently changed machines
-  const shouldPulseGrey = isAlertStatus && recentlyChanged;
-  const shouldPulseGreen = isOnlineStatus && recentlyChanged;
-  const shouldPulse = shouldPulseGrey || shouldPulseGreen;
+  // Map status to color with opacity for pulsing effect
+  const pulseColorMap = {
+    'green': 'rgba(40, 167, 69, 0.8)',    // #28a745
+    'yellow': 'rgba(255, 193, 7, 0.8)',  // #ffc107
+    'red': 'rgba(220, 53, 69, 0.8)',     // #dc3545
+    'black': 'rgba(0, 0, 0, 0.8)',       // #000000
+    'grey': 'rgba(108, 117, 125, 0.8)'   // #6c757d
+  };
   
-           const pulseClass = shouldPulse ? (shouldPulseGrey ? 'pulse-grey' : 'pulse-green') : '';
-           const pulseColor = shouldPulseGrey ? 'rgba(108, 117, 125, 0.8)' : 'rgba(0, 255, 0, 0.8)';
-           const pulseAnimation = shouldPulseGrey ? 'pulse-individual' : 'pulse-green';
-           const pulseStyle = shouldPulse ? `
-             border: ${borderWidth} solid ${pulseColor} !important;
-             animation: ${pulseAnimation} 1s ease-in-out infinite;
-             z-index: 99999 !important;
-             position: relative;
-           ` : '';
+  // Default pulse color based on status (use normalized status)
+  const pulseColor = pulseColorMap[normalizedStatus] || pulseColorMap['grey'];
+  const pulseClass = shouldPulse ? `pulse-${normalizedStatus}` : '';
+  
+  // Create dynamic pulsing animation based on status color
+  const pulseAnimationName = shouldPulse ? `pulse-${normalizedStatus}` : '';
+  
+  // Debug logging for machine 107
+  if (machineId && (machineId.includes('107') || machineId.includes('INHOUSE107'))) {
+    console.log(`createCustomIcon pulse for ${machineId}: status=${status}, normalizedStatus=${normalizedStatus}, shouldPulse=${shouldPulse}, pulseColor=${pulseColor}, pulseClass=${pulseClass}, pulseColorMap=`, pulseColorMap);
+    if (!pulseColorMap[normalizedStatus]) {
+      console.warn(`createCustomIcon: No pulse color found for normalizedStatus="${normalizedStatus}", using grey as fallback`);
+    }
+  }
+  
+  // Add dynamic keyframe if pulsing - matches marker color
+  if (shouldPulse) {
+    // Inject/update dynamic keyframe for this specific color
+    const styleId = `pulse-keyframe-${normalizedStatus}`;
+    let existingStyle = document.getElementById(styleId);
+    
+    // Always update the keyframe to ensure correct color (especially for machine 107)
+    const pulseColorFade = pulseColor.replace('0.8', '0');
+    const keyframeContent = `
+      @keyframes pulse-${normalizedStatus} {
+        0%, 100% { 
+          box-shadow: 0 0 0 0 ${pulseColor};
+          transform: scale(1);
+        }
+        50% { 
+          box-shadow: 0 0 0 15px ${pulseColorFade};
+          transform: scale(1.15);
+        }
+      }
+    `;
+    
+    if (existingStyle) {
+      // Update existing keyframe
+      existingStyle.textContent = keyframeContent;
+      if (machineId && (machineId.includes('107') || machineId.includes('INHOUSE107'))) {
+        console.log(`Updated pulse keyframe for ${machineId}: ${normalizedStatus} with color ${pulseColor}`);
+      }
+    } else {
+      // Create new keyframe
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = keyframeContent;
+      document.head.appendChild(style);
+      console.log(`Created pulse keyframe for ${normalizedStatus} with color ${pulseColor}`);
+    }
+  }
+  
+  const pulseStyle = shouldPulse ? `
+    border: ${borderWidth} solid ${pulseColor} !important;
+    animation: ${pulseAnimationName} 1s ease-in-out infinite;
+    z-index: 99999 !important;
+    position: relative;
+    box-shadow: 0 0 0 0 ${pulseColor} !important;
+  ` : '';
+
+  // Debug for machine 107 - log final icon creation
+  if (machineId && (machineId.includes('107') || machineId.includes('INHOUSE107'))) {
+    console.log(`createCustomIcon FINAL for ${machineId}: status=${status}, normalizedStatus=${normalizedStatus}, color=${color}, pulseColor=${pulseColor}, pulseStyle=${pulseStyle ? 'APPLIED' : 'NONE'}`);
+  }
 
   return L.divIcon({
     className: `custom-marker ${pulseClass}`,
@@ -124,7 +190,7 @@ const createCustomIcon = (status, systemType, machineId, recentlyChanged) => {
       width: ${size}px;
       height: ${size}px;
       border-radius: ${borderRadius};
-      border: ${borderWidth} solid white;
+      border: ${borderWidth} solid ${shouldPulse ? pulseColor : 'white'};
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
@@ -176,11 +242,24 @@ function MachineMarker({ machine, icon, recentlyChanged, popupsToOpen, onPopupOp
     }
   }, [machine.id, popupsToOpen, onPopupOpened]);
   
+  // Update icon when machine status changes - force update for machine 107
+  useEffect(() => {
+    if (markerRef.current && icon) {
+      markerRef.current.setIcon(icon);
+      
+      // Debug for machine 107
+      if (machine.id && (machine.id.includes('107') || machine.id.includes('INHOUSE107'))) {
+        console.log(`MachineMarker: Updated icon for ${machine.id} with status ${machine.status}, icon created with recentlyChanged=${recentlyChanged}`);
+      }
+    }
+  }, [icon, machine.status, machine.id, recentlyChanged]);
+  
   return (
     <Marker
       ref={markerRef}
       position={[machine.latitude, machine.longitude]}
       icon={icon}
+      key={`${machine.id}-${machine.status}`}
     >
       <Popup>
         <div className="machine-popup">
@@ -253,10 +332,10 @@ function MachineMarker({ machine, icon, recentlyChanged, popupsToOpen, onPopupOp
             {/* Sensor Data */}
             {machine.data && (
               <div className="data-grid">
-                <div className="data-item">Temperature: {machine.data.temperature}°C</div>
-                <div className="data-item">Pressure: {machine.data.pressure} bar</div>
-                <div className="data-item">Speed: {machine.data.speed} rpm</div>
-                <div className="data-item">Disk Usage: {machine.data.disk_volume}%</div>
+                <div className="data-item">Temperature: {typeof machine.data.temperature === 'number' ? machine.data.temperature.toFixed(1) : machine.data.temperature}°C</div>
+                <div className="data-item">Pressure: {typeof machine.data.pressure === 'number' ? machine.data.pressure.toFixed(2) : machine.data.pressure} bar</div>
+                <div className="data-item">Speed: {typeof machine.data.speed === 'number' ? Math.round(machine.data.speed) : machine.data.speed} rpm</div>
+                <div className="data-item">Disk Usage: {typeof machine.data.disk_volume === 'number' ? machine.data.disk_volume.toFixed(1) : machine.data.disk_volume}%</div>
               </div>
             )}
           </div>
@@ -293,9 +372,13 @@ function App() {
   const [lastFlashTime, setLastFlashTime] = useState(0);
   const [popupsToOpen, setPopupsToOpen] = useState(new Set());
   const [simulationPaused, setSimulationPaused] = useState(true);
+  const simulationPausedRef = useRef(true); // Track current pause state for interval callbacks
+  const [machineStatusLocks, setMachineStatusLocks] = useState(new Map()); // Track machines locked to a status for 2 minutes after green->non-green change
   const [simulationControlsOpen, setSimulationControlsOpen] = useState(false);
   const [markersListOpen, setMarkersListOpen] = useState(false);
   const [expandedCountries, setExpandedCountries] = useState(new Set());
+  const [machineLogs, setMachineLogs] = useState([]); // Log entries for machine changes
+  const [logsOpen, setLogsOpen] = useState(true); // Collapsible logs section
 
   // Callback to handle when a popup is opened
   const handlePopupOpened = (machineId) => {
@@ -313,9 +396,342 @@ function App() {
 
   // Toggle simulation pause/resume
   const toggleSimulationPause = () => {
-    setSimulationPaused(prev => !prev);
-    console.log(`Simulation ${simulationPaused ? 'resumed' : 'paused'}`);
+    setSimulationPaused(prev => {
+      const newState = !prev;
+      simulationPausedRef.current = newState; // Update ref immediately
+      console.log(`Simulation ${newState ? 'paused' : 'resumed'}`);
+      return newState;
+    });
   };
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    simulationPausedRef.current = simulationPaused;
+  }, [simulationPaused]);
+
+  // Trigger manual change on random machine
+  const triggerRandomMachineChange = async () => {
+    if (machines.length === 0) {
+      console.log('No machines available for random change');
+      return;
+    }
+
+    // Select a random machine
+    const randomMachine = machines[Math.floor(Math.random() * machines.length)];
+    console.log(`Triggering random change on: ${randomMachine.name} (${randomMachine.id})`);
+
+    // Always change status (100% chance) - random change button should always trigger visual effects
+    const newStatus = getRandomStatus();
+    
+    // Always vary data slightly
+    const dataVariation = getRandomDataVariation();
+
+    // Check if machine is locked - don't allow status changes if locked
+    const statusLock = machineStatusLocks.get(randomMachine.id);
+    const isLocked = statusLock && statusLock.expiry && Date.now() < statusLock.expiry;
+    
+    if (isLocked) {
+      console.log(`Random Change: Machine ${randomMachine.id} is locked to ${statusLock.status} until ${new Date(statusLock.expiry).toLocaleTimeString()}, skipping status change`);
+      return; // Don't change status if locked
+    }
+    
+    // Update machine via API
+    await updateMachineViaAPI(randomMachine, newStatus, dataVariation);
+    
+    // Only log and trigger visual effects for status/color changes
+    if (newStatus && newStatus !== randomMachine.status) {
+      // If changing from green to non-green, lock the new status for 2 minutes
+      const oldStatusNormalized = (randomMachine.status || '').toLowerCase().trim();
+      const newStatusNormalized = (newStatus || '').toLowerCase().trim();
+      if (oldStatusNormalized === 'green' && newStatusNormalized !== 'green') {
+        const lockExpiry = Date.now() + 120000; // 2 minutes = 120000ms
+        setMachineStatusLocks(prev => {
+          const newMap = new Map(prev);
+          newMap.set(randomMachine.id, { status: newStatus, expiry: lockExpiry });
+          console.log(`Random Change: Locked ${randomMachine.id} to ${newStatus} for 2 minutes (until ${new Date(lockExpiry).toLocaleTimeString()})`);
+          return newMap;
+        });
+        
+        // Auto-unlock after 2 minutes
+        setTimeout(() => {
+          setMachineStatusLocks(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(randomMachine.id);
+            console.log(`Random Change: Unlocked ${randomMachine.id} after 2 minutes`);
+            return newMap;
+          });
+        }, 120000);
+      }
+      
+      addLogEntry({
+        machineId: randomMachine.id,
+        machineName: randomMachine.name,
+        type: 'status_change',
+        oldValue: randomMachine.status,
+        newValue: newStatus,
+        timestamp: new Date().toISOString(),
+        source: 'manual'
+      });
+      
+      // Trigger visual effect for status changes (flash, pulsing circle)
+      setRecentlyChangedMachines(prev => {
+        const newSet = new Set(prev);
+        newSet.add(randomMachine.id);
+        return newSet;
+      });
+      
+      // Clear after 30 seconds
+      setTimeout(() => {
+        setRecentlyChangedMachines(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(randomMachine.id);
+          return newSet;
+        });
+      }, 30000);
+    }
+    
+    // Data changes are NOT logged - only status/color changes are logged
+  };
+
+  // =============================================================================
+  // SIMULATION LOGIC - WORKS WITH REAL MACHINES
+  // =============================================================================
+  // This effect runs simulation when not paused, updating real machines via API
+  
+  // Function to get random status (maps to visual effect statuses)
+  const getRandomStatus = () => {
+    // Map to visual effect statuses: green, yellow, red, black, grey
+    const statuses = ['green', 'yellow', 'red', 'black', 'grey'];
+    const weights = [0.6, 0.15, 0.1, 0.08, 0.07]; // 60% green, 15% yellow, 10% red, 8% black, 7% grey
+    const random = Math.random();
+    let sum = 0;
+    for (let i = 0; i < statuses.length; i++) {
+      sum += weights[i];
+      if (random <= sum) {
+        return statuses[i];
+      }
+    }
+    return 'green';
+  };
+
+  // Function to get random data variation
+  const getRandomDataVariation = () => {
+    const variation = API_CONFIG.SIMULATION.DATA_VARIATION;
+    return {
+      temperature: (Math.random() * (variation.temperature.max - variation.temperature.min) + variation.temperature.min),
+      pressure: (Math.random() * (variation.pressure.max - variation.pressure.min) + variation.pressure.min),
+      speed: (Math.random() * (variation.speed.max - variation.speed.min) + variation.speed.min),
+      disk_volume: (Math.random() * (variation.disk_volume.max - variation.disk_volume.min) + variation.disk_volume.min)
+    };
+  };
+
+  // Function to find which API a machine belongs to
+  const findMachineAPI = (machineId) => {
+    // Try to match machine with API by checking if we can reach it
+    // For now, we'll try each API until we find the right one
+    // This could be optimized by storing API mapping
+    return API_CONFIG.MACHINE_APIS[0]; // Try first API (or implement better matching)
+  };
+
+  // Function to update a machine via API
+  const updateMachineViaAPI = async (machine, newStatus = null, dataVariation = null) => {
+    try {
+      // Determine new status (use current if not changing)
+      const status = newStatus || machine.status;
+      
+      // Calculate new data values
+      let newData = { ...machine.data };
+      if (dataVariation) {
+        newData = {
+          temperature: Math.max(0, Math.min(100, (machine.data?.temperature || 42) + dataVariation.temperature)),
+          pressure: Math.max(0, Math.min(10, (machine.data?.pressure || 2.0) + dataVariation.pressure)),
+          speed: Math.max(0, Math.min(3000, (machine.data?.speed || 1450) + dataVariation.speed)),
+          disk_volume: Math.max(0, Math.min(100, (machine.data?.disk_volume || 75) + dataVariation.disk_volume))
+        };
+      }
+
+      // Try each API until we find the right one
+      for (const apiUrl of API_CONFIG.MACHINE_APIS) {
+        try {
+          // Send POST request to update machine
+          const updateUrl = `${apiUrl}${API_CONFIG.ENDPOINTS.STATUS_UPDATE}${machine.id}/status`;
+          
+          // FastAPI can accept query parameters or body - use query params for status, body for data
+          const response = await axios.post(updateUrl, 
+            newData, // Send data in request body
+            {
+              params: { 
+                status: status // Send status as query parameter
+              },
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              timeout: API_CONFIG.TIMEOUT
+            }
+          );
+
+          console.log(`Simulation: Updated ${machine.name} (${machine.id}) to ${status}`, newData);
+          
+          // Normalize statuses for comparison
+          const currentStatus = (machine.status || '').toLowerCase().trim();
+          const newStatusNormalized = (status || '').toLowerCase().trim();
+          
+          // Debug for machine 107
+          const isMachine107 = machine.id && (machine.id.includes('107') || machine.id.includes('INHOUSE107'));
+          if (isMachine107) {
+            console.log(`Simulation: Machine 107 status check - currentStatus="${currentStatus}", newStatus="${status}", newStatusNormalized="${newStatusNormalized}"`);
+          }
+          
+          // Only log and trigger visual effects for status/color changes
+          if (newStatus && currentStatus !== newStatusNormalized) {
+            // Check if machine is locked - don't allow status changes if locked
+            const statusLock = machineStatusLocks.get(machine.id);
+            const isLocked = statusLock && statusLock.expiry && Date.now() < statusLock.expiry;
+            
+            if (isLocked && isMachine107) {
+              console.log(`Simulation: Machine 107 is locked to ${statusLock.status} until ${new Date(statusLock.expiry).toLocaleTimeString()}, ignoring status change`);
+              return response.data; // Don't change status if locked
+            }
+            
+            console.log(`Simulation: Status change detected for ${machine.name} (${machine.id}): ${machine.status} -> ${status}`);
+            addLogEntry({
+              machineId: machine.id,
+              machineName: machine.name,
+              type: 'status_change',
+              oldValue: machine.status,
+              newValue: status,
+              timestamp: new Date().toISOString(),
+              source: 'simulation'
+            });
+            
+            // If changing from green to non-green, lock the new status for 2 minutes
+            const oldStatusNormalized = (machine.status || '').toLowerCase().trim();
+            const newStatusNormalized = (status || '').toLowerCase().trim();
+            if (oldStatusNormalized === 'green' && newStatusNormalized !== 'green') {
+              const lockExpiry = Date.now() + 120000; // 2 minutes = 120000ms
+              setMachineStatusLocks(prev => {
+                const newMap = new Map(prev);
+                newMap.set(machine.id, { status: status, expiry: lockExpiry });
+                console.log(`Simulation: Locked ${machine.id} to ${status} for 2 minutes (until ${new Date(lockExpiry).toLocaleTimeString()})`);
+                return newMap;
+              });
+              
+              // Auto-unlock after 2 minutes
+              setTimeout(() => {
+                setMachineStatusLocks(prev => {
+                  const newMap = new Map(prev);
+                  newMap.delete(machine.id);
+                  console.log(`Simulation: Unlocked ${machine.id} after 2 minutes`);
+                  return newMap;
+                });
+              }, 120000);
+            }
+            
+            // Trigger visual effect for status changes (flash, pulsing circle)
+            setRecentlyChangedMachines(prev => {
+              const newSet = new Set(prev);
+              newSet.add(machine.id);
+              console.log(`Simulation: Added ${machine.id} to recentlyChangedMachines for visual effects. Now contains:`, Array.from(newSet));
+              
+              // Force re-render by updating machines state to reflect new status immediately
+              setMachines(prevMachines => {
+                return prevMachines.map(m => {
+                  if (m.id === machine.id) {
+                    return { ...m, status: status };
+                  }
+                  return m;
+                });
+              });
+              
+              return newSet;
+            });
+            
+            // Clear after 30 seconds
+            setTimeout(() => {
+              setRecentlyChangedMachines(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(machine.id);
+                return newSet;
+              });
+            }, 30000);
+          } else if (isMachine107) {
+            console.log(`Simulation: Machine 107 - No status change triggered (newStatus=${newStatus}, currentStatus=${currentStatus}, newStatusNormalized=${newStatusNormalized})`);
+          }
+          
+          // Data changes are NOT logged - only status/color changes are logged
+          
+          return response.data;
+        } catch (error) {
+          // Try next API if this one fails
+          if (error.response?.status === 404) {
+            console.log(`Simulation: Machine ${machine.id} not found on ${apiUrl}, trying next API...`);
+            continue; // Machine not found on this API, try next
+          }
+          console.error(`Simulation: Error updating ${machine.id} on ${apiUrl}:`, error.message);
+          // Don't throw - continue to next API
+          if (apiUrl === API_CONFIG.MACHINE_APIS[API_CONFIG.MACHINE_APIS.length - 1]) {
+            // Last API failed, log warning but don't throw
+            console.warn(`Simulation: Could not update machine ${machine.id} on any API`);
+          }
+        }
+      }
+      
+      console.warn(`Simulation: Could not find API for machine ${machine.id}`);
+      return null;
+    } catch (error) {
+      console.error(`Simulation: Failed to update ${machine.name} (${machine.id}):`, error.message);
+      return null;
+    }
+  };
+
+  // Simulation effect - runs when simulation is not paused
+  useEffect(() => {
+    if (simulationPaused || machines.length === 0) {
+      console.log(`Simulation: Paused or no machines (paused: ${simulationPaused}, machines: ${machines.length})`);
+      return; // Don't run simulation if paused or no machines
+    }
+
+    console.log(`Simulation: Starting simulation with ${machines.length} machine(s)`);
+
+    const simulationInterval = setInterval(() => {
+      // Check if still not paused (in case it was paused during interval)
+      // Use ref to get current value instead of closure value
+      if (simulationPausedRef.current || machines.length === 0) {
+        return;
+      }
+
+      // Randomly select machines to update (up to 30% of machines per cycle)
+      const machinesToUpdate = machines
+        .filter(() => Math.random() < 0.3) // 30% chance per machine
+        .slice(0, Math.ceil(machines.length * 0.3)); // Limit to 30% of total
+
+      if (machinesToUpdate.length === 0) {
+        return; // No machines to update this cycle
+      }
+
+      console.log(`Simulation: Updating ${machinesToUpdate.length} machine(s)`);
+
+      // Update each selected machine
+      machinesToUpdate.forEach(machine => {
+        // Decide if we should change status (40% probability)
+        const shouldChangeStatus = Math.random() < API_CONFIG.SIMULATION.STATUS_CHANGE_PROBABILITY;
+        const newStatus = shouldChangeStatus ? getRandomStatus() : null;
+        
+        // Always vary data slightly
+        const dataVariation = getRandomDataVariation();
+
+        // Update machine via API (non-blocking)
+        updateMachineViaAPI(machine, newStatus, dataVariation).catch(err => {
+          console.error(`Simulation: Error updating ${machine.id}:`, err);
+        });
+      });
+    }, API_CONFIG.SIMULATION.UPDATE_INTERVAL);
+
+    return () => {
+      clearInterval(simulationInterval);
+      console.log('Simulation: Stopped/cleared');
+    };
+  }, [simulationPaused, machines]);
 
   // Toggle markers list window
   const toggleMarkersList = () => {
@@ -333,6 +749,77 @@ function App() {
       }
       return newSet;
     });
+  };
+
+  // =============================================================================
+  // MACHINE LOGGING SYSTEM
+  // =============================================================================
+  
+  // Detect significant data changes (for logging)
+  const detectDataChanges = (oldData, newData) => {
+    if (!oldData || !newData) return [];
+    
+    const changes = [];
+    const thresholds = {
+      temperature: 1.0, // 1°C change
+      pressure: 0.1,    // 0.1 bar change
+      speed: 25,        // 25 rpm change
+      disk_volume: 2.0  // 2% change
+    };
+    
+    Object.keys(thresholds).forEach(key => {
+      const oldVal = oldData[key];
+      const newVal = newData[key];
+      if (oldVal !== undefined && newVal !== undefined) {
+        const diff = Math.abs(newVal - oldVal);
+        if (diff >= thresholds[key]) {
+          changes.push({
+            field: key,
+            oldValue: oldVal,
+            newValue: newVal,
+            difference: diff.toFixed(2)
+          });
+        }
+      }
+    });
+    
+    return changes;
+  };
+
+  // Visual effects are ONLY triggered by status changes, not data changes
+  // This function is kept for potential future use but currently returns false
+  const detectVisualChanges = (oldData, newData) => {
+    // No data changes trigger visual effects - only status changes do
+    return false;
+  };
+
+  // Add log entry and save to backend
+  const addLogEntry = async (logEntry) => {
+    // Add to local state
+    setMachineLogs(prev => {
+      const newLogs = [logEntry, ...prev].slice(0, 100); // Keep last 100 entries
+      return newLogs;
+    });
+
+    // Save to backend
+    try {
+      // Try each API to save the log
+      for (const apiUrl of API_CONFIG.MACHINE_APIS) {
+        try {
+          await axios.post(`${apiUrl}/logs`, logEntry, {
+            timeout: API_CONFIG.TIMEOUT,
+            headers: { 'Content-Type': 'application/json' }
+          });
+          break; // Success, no need to try other APIs
+        } catch (error) {
+          // Continue to next API if this one fails
+          continue;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save log to backend:', error);
+      // Log still added to UI, just couldn't save to file
+    }
   };
 
   // =============================================================================
@@ -426,16 +913,134 @@ function App() {
           const results = await Promise.all(promises);
           const combinedMachines = results.flat();
           
-          setMachines(combinedMachines);
+          console.log(`Polling: Fetched ${combinedMachines.length} machines:`, combinedMachines.map(m => ({ id: m.id, name: m.name, status: m.status })));
+          
+          // Track changes in machines
+          setMachines(prevMachines => {
+            console.log(`Polling: Previous machines (${prevMachines.length}):`, prevMachines.map(m => ({ id: m.id, name: m.name, status: m.status })));
+            
+            // Compare old and new machines to detect changes
+            const machineMap = new Map(prevMachines.map(m => [m.id, m]));
+            const machinesWithVisualChanges = new Set();
+            
+            // Process both existing and new machines
+            combinedMachines.forEach(newMachine => {
+              const oldMachine = machineMap.get(newMachine.id);
+              
+              // Debug logging for machine 107
+              const isMachine107 = newMachine.id && (newMachine.id.includes('107') || newMachine.id.includes('INHOUSE107'));
+              if (isMachine107) {
+                console.log(`Polling: Processing machine 107: id=${newMachine.id}, oldMachine=`, oldMachine, `newMachine.status=${newMachine.status}`);
+              }
+              
+              let hasVisualChange = false;
+              
+              // Normalize status to lowercase for comparison
+              const oldStatus = (oldMachine?.status || '').toLowerCase().trim();
+              const newStatus = (newMachine.status || '').toLowerCase().trim();
+              
+              // Check for status lock (don't change if locked and coming from green)
+              const statusLock = machineStatusLocks.get(newMachine.id);
+              const isLocked = statusLock && statusLock.expiry && Date.now() < statusLock.expiry;
+              
+              // Check for status/color changes (only these trigger visual effects and logging)
+              if (oldMachine) {
+                // Check if machine is locked - don't allow status changes if locked
+                if (isLocked) {
+                  if (isMachine107) {
+                    console.log(`Polling: Machine 107 is locked to ${statusLock.status} until ${new Date(statusLock.expiry).toLocaleTimeString()}, keeping locked status`);
+                  }
+                  // Keep locked status, don't change
+                  newMachine.status = statusLock.status;
+                  // Continue processing but skip change detection
+                } else {
+                  // Existing machine - check if status changed (only if not locked)
+                  if (oldStatus !== newStatus && oldStatus !== '' && newStatus !== '') {
+                    hasVisualChange = true;
+                  console.log(`Polling: Status change detected for ${newMachine.name} (${newMachine.id}): ${oldMachine.status} -> ${newMachine.status}`);
+                  addLogEntry({
+                    machineId: newMachine.id,
+                    machineName: newMachine.name,
+                    type: 'status_change',
+                    oldValue: oldMachine.status,
+                    newValue: newMachine.status,
+                    timestamp: new Date().toISOString(),
+                    source: 'polling'
+                  });
+                  
+                  // If changing from green to non-green, lock the new status for 2 minutes
+                  const oldStatusNormalized = (oldMachine.status || '').toLowerCase().trim();
+                  const newStatusNormalized = (newMachine.status || '').toLowerCase().trim();
+                  if (oldStatusNormalized === 'green' && newStatusNormalized !== 'green') {
+                    const lockExpiry = Date.now() + 120000; // 2 minutes = 120000ms
+                    setMachineStatusLocks(prev => {
+                      const newMap = new Map(prev);
+                      newMap.set(newMachine.id, { status: newMachine.status, expiry: lockExpiry });
+                      console.log(`Polling: Locked ${newMachine.id} to ${newMachine.status} for 2 minutes (until ${new Date(lockExpiry).toLocaleTimeString()})`);
+                      return newMap;
+                    });
+                    
+                    // Auto-unlock after 2 minutes
+          setTimeout(() => {
+                      setMachineStatusLocks(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(newMachine.id);
+                        console.log(`Polling: Unlocked ${newMachine.id} after 2 minutes`);
+                        return newMap;
+                      });
+                    }, 120000);
+                  }
+                  } else if (isMachine107) {
+                    console.log(`Polling: Machine 107 - No status change: oldStatus="${oldStatus}" === newStatus="${newStatus}"`);
+                  }
+                }
+              } else {
+                // New machine - always log first appearance (but don't trigger visual unless status is non-grey)
+                console.log(`New machine detected: ${newMachine.name} (${newMachine.id}) with status ${newMachine.status}`);
+              }
+              
+              // Add to visual changes set if status changed
+              if (hasVisualChange) {
+                machinesWithVisualChanges.add(newMachine.id);
+                console.log(`Polling: Added ${newMachine.id} to machinesWithVisualChanges for visual effects`);
+              } else if (isMachine107) {
+                console.log(`Polling: Machine 107 - NOT added to machinesWithVisualChanges (hasVisualChange=${hasVisualChange})`);
+              }
+            });
+            
+            // Update recently changed machines for visual effects
+            if (machinesWithVisualChanges.size > 0) {
+              console.log(`Polling: Triggering visual effects for ${machinesWithVisualChanges.size} machine(s):`, Array.from(machinesWithVisualChanges));
+            setRecentlyChangedMachines(prev => {
+              const newSet = new Set(prev);
+                machinesWithVisualChanges.forEach(id => newSet.add(id));
+                console.log(`Polling: Updated recentlyChangedMachines, now contains:`, Array.from(newSet));
+              return newSet;
+            });
+              
+              // Clear after 30 seconds
+              setTimeout(() => {
+                setRecentlyChangedMachines(prev => {
+                  const newSet = new Set(prev);
+                  machinesWithVisualChanges.forEach(id => newSet.delete(id));
+                  return newSet;
+                });
+              }, 30000);
+            }
+            
+            // Always return combined machines (merge old with new, preferring new data)
+            return combinedMachines;
+          });
+          
           setConnectionStatus(`Connected (${combinedMachines.length} machines)`);
-        } catch (error) {
+      } catch (error) {
           console.error('Failed to fetch machines:', error);
           setConnectionStatus(`Error: ${error.message}`);
-        }
-      };
+      }
+    };
       fetchAllMachines();
     }, API_CONFIG.POLL_INTERVAL); // Poll every 5 seconds
-    
+
     // Return cleanup function
     return () => {
       clearInterval(pollInterval);
@@ -577,31 +1182,26 @@ function App() {
     }
   }, [displayedMachines, alertedMachines]);
 
-  // Flash effect when machines change status - SPECIFICATION COMPLIANT
+  // Flash effect when machines change status - matches marker color
   useEffect(() => {
-    const alertStatuses = ['yellow', 'red', 'black', 'grey'];
-    const newlyChangedToAlert = displayedMachines.filter(machine => 
-      alertStatuses.includes(machine.status) && recentlyChangedMachines.has(machine.id)
-    );
-    const newlyReturnedToOnline = displayedMachines.filter(machine => 
-      machine.status === 'green' && recentlyChangedMachines.has(machine.id)
+    const changedMachines = displayedMachines.filter(machine => 
+      recentlyChangedMachines.has(machine.id)
     );
 
-    // Only trigger flash if there are changes - prioritize green for recoveries
+    if (changedMachines.length === 0) return;
+
+    // Get the most recent status change - use first changed machine's status
+    const changedMachine = changedMachines[0];
+    const statusColor = changedMachine.status;
+
+    // Only trigger flash if enough time has passed since last flash
     const now = Date.now();
     const timeSinceLastFlash = now - lastFlashTime;
     
-    if (newlyReturnedToOnline.length > 0 && timeSinceLastFlash > 3000) {
-      console.log(`GREEN FLASH TRIGGERED: ${newlyReturnedToOnline.length} machines returned to online status!`);
-      // Trigger green flash effect for machines returning to online
-      setFlashColor('green');
-      setAlertFlash(true);
-      setLastFlashTime(now);
-      setTimeout(() => setAlertFlash(false), 2000);
-    } else if (newlyChangedToAlert.length > 0 && timeSinceLastFlash > 3000) {
-      console.log(`GREY FLASH TRIGGERED: ${newlyChangedToAlert.length} machines just changed to alert status!`);
-      // Trigger grey flash effect for newly changed machines
-      setFlashColor('grey');
+    if (timeSinceLastFlash > 3000) {
+      console.log(`FLASH TRIGGERED: ${changedMachines.length} machine(s) changed to ${statusColor}!`);
+      // Trigger flash effect matching the marker color
+      setFlashColor(statusColor);
       setAlertFlash(true);
       setLastFlashTime(now);
       setTimeout(() => setAlertFlash(false), 2000);
@@ -725,16 +1325,35 @@ function App() {
            <AutoFitBounds machines={displayedMachines} />
 
           {/* Machine markers with auto-popup capability */}
-          {displayedMachines.map((machine) => (
+          {displayedMachines.map((machine) => {
+            // Check if machine has a status lock (changed from green -> non-green, locked for 2 min)
+            const statusLock = machineStatusLocks.get(machine.id);
+            const lockedStatus = statusLock?.status;
+            const lockExpiry = statusLock?.expiry;
+            const isLocked = lockedStatus && lockExpiry && Date.now() < lockExpiry;
+            
+            // Use locked status if machine is locked, otherwise use actual status
+            const displayStatus = isLocked ? lockedStatus : machine.status;
+            
+            const isRecentlyChanged = recentlyChangedMachines.has(machine.id);
+            const icon = createCustomIcon(displayStatus, machine.system_type, machine.id, isRecentlyChanged);
+            
+            // Debug for machine 107
+            if (machine.id && (machine.id.includes('107') || machine.id.includes('INHOUSE107'))) {
+              console.log(`Rendering machine ${machine.id}: actualStatus=${machine.status}, displayStatus=${displayStatus}, isLocked=${isLocked}, lockedStatus=${lockedStatus}, isRecentlyChanged=${isRecentlyChanged}, recentlyChangedMachines=`, Array.from(recentlyChangedMachines));
+            }
+            
+            return (
             <MachineMarker
-              key={machine.id}
-              machine={machine}
-              icon={createCustomIcon(machine.status, machine.system_type, machine.id, recentlyChangedMachines.has(machine.id))}
-              recentlyChanged={recentlyChangedMachines.has(machine.id)}
+                key={`${machine.id}-${displayStatus}-${isRecentlyChanged}`}
+                machine={{ ...machine, status: displayStatus }}
+                icon={icon}
+                recentlyChanged={isRecentlyChanged}
               popupsToOpen={popupsToOpen}
               onPopupOpened={handlePopupOpened}
             />
-          ))}
+            );
+          })}
         </MapContainer>
 
         <div className="status-panel">
@@ -762,6 +1381,16 @@ function App() {
                   Simulation: {simulationPaused ? 'PAUSED' : 'RUNNING'}
                 </div>
               </div>
+              <div className="simulation-control" style={{ marginTop: '0.5rem' }}>
+                <button 
+                  className="random-change-button"
+                  onClick={triggerRandomMachineChange}
+                  title="Trigger a random change on a random machine"
+                  disabled={machines.length === 0}
+                >
+                  🎲 Random Change
+                </button>
+              </div>
             </div>
           </div>
           
@@ -784,6 +1413,36 @@ function App() {
            <div className="status-item">
              <div className="status-indicator red"></div>
              Active (Errors): {statusCounts.red || 0}
+           </div>
+          
+          {/* Machine Logs Section - Collapsible */}
+          <div className="machine-logs-section">
+            <div className="logs-header" onClick={() => setLogsOpen(!logsOpen)}>
+              <span className="logs-title">📋 Machine Logs</span>
+              <span className={`toggle-icon ${logsOpen ? 'open' : ''}`}>▼</span>
+            </div>
+            <div className={`logs-content ${logsOpen ? '' : 'closed'}`}>
+              <div className="logs-list">
+                {machineLogs.length === 0 ? (
+                  <div className="log-entry empty">No log entries yet</div>
+                ) : (
+                  machineLogs.map((log, index) => (
+                    <div key={index} className="log-entry">
+                      <div className="log-header">
+                        <span className="log-time">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <span className={`log-source ${log.source}`}>{log.source}</span>
+                      </div>
+                      <div className="log-machine">{log.machineName} ({log.machineId})</div>
+                      {log.type === 'status_change' && (
+                        <div className="log-details">
+                          Color/Status: <span className="log-old">{log.oldValue}</span> → <span className="log-new">{log.newValue}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
            </div>
           
           <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
