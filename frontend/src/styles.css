@@ -1,0 +1,1305 @@
+/* Global Machine Monitor - Main Stylesheet */
+
+/* =============================================================================
+   GLOBAL STYLES
+   ============================================================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #ffffff;
+  color: #2c2c2c;
+  overflow: hidden;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hidden marker for auto-popups */
+.hidden-marker {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+
+/* =============================================================================
+   APP CONTAINER
+   ============================================================================= */
+
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* =============================================================================
+   SINTERCAST LOGO (INTEGRATED)
+   ============================================================================= */
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Analytics panel header styling */
+.analytics-panel .header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logo-text-small {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #8B1538;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1;
+}
+
+.logo-subtitle-small {
+  font-size: 0.7rem;
+  color: #888;
+  font-style: italic;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+.analytics-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8B1538;
+}
+
+/* =============================================================================
+   MAP WRAPPER
+   ============================================================================= */
+
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #8B1538;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.2);
+}
+
+/* =============================================================================
+   SINTERCAST MAP STYLING
+   ============================================================================= */
+
+/* Custom map tile styling - Neutral Theme */
+.sintercast-map-tiles {
+  filter: grayscale(100%) brightness(1.1) contrast(1.1);
+}
+
+/* Neutral overlay for map */
+.map-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 6px;
+}
+
+/* Leaflet map container styling */
+.leaflet-container {
+  background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%) !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Custom map controls styling */
+.leaflet-control-zoom a {
+  background-color: #ffffff !important;
+  border: 2px solid #8B1538 !important;
+  color: #8B1538 !important;
+  font-weight: bold !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 4px rgba(139, 21, 56, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #8B1538 !important;
+  color: #ffffff !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 8px rgba(139, 21, 56, 0.3) !important;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #8B1538 !important;
+  font-size: 0.8rem !important;
+}
+
+.leaflet-control-attribution a {
+  color: #8B1538 !important;
+}
+
+/* Map popup styling */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  border: 1px solid #8B1538 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.15) !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+  border: 1px solid #8B1538 !important;
+}
+
+.leaflet-popup-close-button {
+  color: #8B1538 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #ffffff !important;
+  background: #8B1538 !important;
+}
+
+/* =============================================================================
+   STATUS PANEL
+   ============================================================================= */
+
+.status-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(139, 21, 56, 0.1);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+/* Status Colors - Specification Compliant */
+.status-indicator.grey {
+  background-color: #6c757d; /* Not connected to SOSON */
+}
+
+.status-indicator.black {
+  background-color: #000000; /* System not accessible */
+}
+
+.status-indicator.green {
+  background-color: #28a745; /* Active with no alarms */
+}
+
+.status-indicator.yellow {
+  background-color: #ffc107; /* Active with warnings */
+}
+
+.status-indicator.red {
+  background-color: #dc3545; /* Active with errors */
+}
+
+/* Legacy support */
+.status-indicator.online {
+  background-color: #28a745;
+}
+
+.status-indicator.warning {
+  background-color: #ffc107;
+}
+
+.status-indicator.offline {
+  background-color: #000000;
+}
+
+.status-indicator.error {
+  background-color: #dc3545;
+}
+
+/* =============================================================================
+   MACHINE LOGS
+   ============================================================================= */
+
+.machine-logs-section {
+  margin-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  padding-top: 0.75rem;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 0.5rem;
+}
+
+.logs-header:hover {
+  background: rgba(139, 21, 56, 0.05);
+  border-radius: 4px;
+}
+
+.logs-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8B1538;
+}
+
+.logs-content {
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.logs-content.closed {
+  display: none;
+}
+
+.logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.log-entry {
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #8B1538;
+  font-size: 0.75rem;
+}
+
+.log-entry.empty {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  border-left: none;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.log-time {
+  color: #6c757d;
+  font-size: 0.7rem;
+}
+
+.log-source {
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.log-source.simulation {
+  background: #ffc107;
+  color: #212529;
+}
+
+.log-source.polling {
+  background: #17a2b8;
+  color: white;
+}
+
+.log-source.manual {
+  background: #28a745;
+  color: white;
+}
+
+.log-machine {
+  font-weight: 600;
+  color: #8B1538;
+  margin-bottom: 0.25rem;
+}
+
+.log-details {
+  color: #495057;
+  font-size: 0.7rem;
+}
+
+.log-change {
+  margin-top: 0.15rem;
+}
+
+.log-old {
+  color: #dc3545;
+  text-decoration: line-through;
+}
+
+.log-new {
+  color: #28a745;
+  font-weight: 600;
+}
+
+/* =============================================================================
+   MACHINE POPUP
+   ============================================================================= */
+
+.machine-popup {
+  min-width: 300px;
+  max-width: 400px;
+  z-index: 99999 !important;
+  position: relative;
+}
+
+/* Ensure Leaflet popup appears above all other elements */
+.leaflet-popup {
+  z-index: 99999 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  z-index: 99999 !important;
+  background: #ffffff !important;
+  border: 1px solid #8B1538 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.15) !important;
+}
+
+.leaflet-popup-tip {
+  z-index: 99999 !important;
+  background: #ffffff !important;
+  border: 1px solid #8B1538 !important;
+}
+
+.machine-name {
+  margin: 0 0 0.5rem 0;
+  color: #8B1538;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.machine-details {
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label {
+  font-weight: bold;
+  margin-right: 0.5rem;
+  color: #8B1538;
+  min-width: 120px;
+}
+
+.detail-value {
+  color: #2c2c2c;
+  font-family: monospace;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.data-item {
+  background: #fafafa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid #e0e0e0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.system-info-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.system-info-title {
+  margin: 0 0 0.5rem 0;
+  color: #8B1538;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.disk-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fafafa;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid #e0e0e0;
+}
+
+.disk-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.disk-item:last-child {
+  margin-bottom: 0;
+}
+
+/* =============================================================================
+   SINTERCAST LOGO (STANDALONE)
+   ============================================================================= */
+
+.sintercast-logo {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(139, 21, 56, 0.1);
+  z-index: 1000;
+}
+
+/* =============================================================================
+   ANALYTICS PANEL
+   ============================================================================= */
+
+.analytics-panel {
+  position: absolute;
+  top: 20px;
+  left: 80px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(139, 21, 56, 0.1);
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+.panel-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #8B1538;
+}
+
+.panel-header:hover {
+  background: #fafafa;
+}
+
+.panel-content {
+  padding: 1rem;
+}
+
+.panel-content.closed {
+  display: none;
+}
+
+.filter-section {
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #8B1538;
+  margin-bottom: 0.25rem;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background: white;
+  color: #2c2c2c;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 2px rgba(139, 21, 56, 0.2);
+}
+
+.metric-card {
+  background: #fafafa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  border: 1px solid #e0e0e0;
+}
+
+.metric-label {
+  font-weight: 600;
+  color: #8B1538;
+  margin-bottom: 0.25rem;
+}
+
+.metric-value {
+  color: #2c2c2c;
+  font-size: 0.9rem;
+}
+
+.toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+
+/* =============================================================================
+   ALERT FLASH EFFECT
+   ============================================================================= */
+
+.alert-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 9999;
+  transition: background 0.1s ease;
+}
+
+.alert-flash.flashing {
+  animation: strobe 1s ease-in-out;
+}
+
+.alert-flash.flashing.grey {
+  background: rgba(108, 117, 125, 0.2);
+}
+
+.alert-flash.flashing.green {
+  background: rgba(40, 167, 69, 0.3);
+}
+
+.alert-flash.flashing.yellow {
+  background: rgba(255, 193, 7, 0.3);
+}
+
+.alert-flash.flashing.red {
+  background: rgba(220, 53, 69, 0.3);
+}
+
+.alert-flash.flashing.black {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+@keyframes strobe {
+  0%, 100% { background: rgba(255, 255, 255, 0.1); }
+  25% { background: rgba(255, 255, 255, 0.05); }
+  50% { background: rgba(255, 255, 255, 0.15); }
+  75% { background: rgba(255, 255, 255, 0.05); }
+}
+
+/* =============================================================================
+   CUSTOM MARKERS AND PULSING EFFECTS
+   ============================================================================= */
+
+/* Ensure all pulsing markers appear above all other markers */
+.custom-marker.pulse-grey,
+.custom-marker.pulse-green {
+  z-index: 99999 !important;
+  position: relative;
+}
+
+/* Pulsing neutral border animation for alert markers - 30 seconds then returns to normal */
+@keyframes pulse-red-30s {
+  0%, 90% { 
+    border: 3px solid rgba(108, 117, 125, 0.8);
+    box-shadow: 0 0 0 0 rgba(108, 117, 125, 0.7);
+  }
+  5%, 15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% { 
+    border: 6px solid rgba(108, 117, 125, 1);
+    box-shadow: 0 0 0 12px rgba(108, 117, 125, 0.4);
+  }
+  95%, 100% { 
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+}
+
+/* Individual pulsing animation for newly changed machines - matches marker color */
+@keyframes pulse-individual {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 currentColor;
+    z-index: 99999 !important;
+  }
+  50% { 
+    box-shadow: 0 0 0 12px rgba(0, 0, 0, 0);
+    z-index: 99999 !important;
+  }
+}
+
+/* Green pulsing animation for recoveries */
+@keyframes pulse-green {
+  0%, 100% { 
+    border: 3px solid rgba(0, 255, 0, 0.8);
+    box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+    z-index: 99999 !important;
+  }
+  50% { 
+    border: 6px solid rgba(0, 255, 0, 1);
+    box-shadow: 0 0 0 12px rgba(0, 255, 0, 0.4);
+    z-index: 99999 !important;
+  }
+}
+
+/* =============================================================================
+   SIMULATION CONTROL
+   ============================================================================= */
+
+.simulation-section {
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.simulation-header {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.simulation-header:hover {
+  background: rgba(139, 21, 56, 0.05);
+  border-radius: 6px 6px 0 0;
+}
+
+.simulation-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8B1538;
+}
+
+.simulation-content {
+  padding: 0.75rem;
+}
+
+.simulation-content.closed {
+  display: none;
+}
+
+.simulation-control {
+  padding: 0;
+}
+
+.pause-button {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.pause-button.running {
+  background-color: #ffc107;
+  color: #212529;
+  border: 1px solid #ffc107;
+}
+
+.pause-button.running:hover {
+  background-color: #e0a800;
+  border-color: #e0a800;
+  transform: translateY(-1px);
+}
+
+.random-change-button {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #8B1538;
+  color: white;
+  border: 1px solid #8B1538;
+}
+
+.random-change-button:hover:not(:disabled) {
+  background-color: #6a0f2a;
+  border-color: #6a0f2a;
+  transform: translateY(-1px);
+}
+
+.random-change-button:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pause-button.paused {
+  background-color: #28a745;
+  color: white;
+  border: 1px solid #28a745;
+}
+
+.pause-button.paused:hover {
+  background-color: #218838;
+  border-color: #218838;
+  transform: translateY(-1px);
+}
+
+.pause-button:active {
+  transform: translateY(0);
+}
+
+.simulation-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.25rem;
+  border-radius: 3px;
+  background: rgba(139, 21, 56, 0.1);
+  color: #8B1538;
+}
+
+/* =============================================================================
+   MARKERS LIST WINDOW
+   ============================================================================= */
+
+.markers-list-window {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 1000px;
+  height: 70%;
+  max-height: 600px;
+  background: white;
+  border: 2px solid #8B1538;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(139, 21, 56, 0.3);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.markers-list-window.closed {
+  display: none;
+}
+
+.markers-list-window.open {
+  display: flex;
+}
+
+.markers-list-header {
+  background: #8B1538;
+  color: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.markers-list-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.close-markers-list {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.close-markers-list:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.markers-list-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.no-markers {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.location-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 0.5rem;
+}
+
+.location-group {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.location-header {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-bottom: 2px solid #8B1538;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+}
+
+.location-header:hover {
+  background-color: rgba(139, 21, 56, 0.05);
+}
+
+.location-title-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-icon {
+  font-size: 0.8rem;
+  color: #8B1538;
+  transition: transform 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.expand-icon.collapsed {
+  transform: rotate(0deg);
+}
+
+.location-title {
+  margin: 0;
+  color: #8B1538;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.markers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 0;
+}
+
+.marker-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.marker-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.15);
+  border-color: #8B1538;
+}
+
+.marker-item:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.marker-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.marker-icon {
+  margin-right: 0.75rem;
+}
+
+.marker-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.marker-info {
+  flex: 1;
+}
+
+.marker-name {
+  font-weight: 600;
+  color: #8B1538;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.marker-status {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.marker-details {
+  font-size: 0.85rem;
+}
+
+.marker-detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.marker-detail-row .detail-label {
+  font-weight: 600;
+  color: #8B1538;
+  min-width: 80px;
+}
+
+.marker-detail-row .detail-value {
+  color: #2c2c2c;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.marker-sensor-data {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.sensor-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.sensor-row span {
+  color: #6c757d;
+  font-family: monospace;
+}
+
+.markers-list-toggle {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: #8B1538;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.3);
+  transition: all 0.2s ease;
+  z-index: 1001;
+}
+
+.markers-list-toggle:hover {
+  background: #6b0f2a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 21, 56, 0.4);
+}
+
+.markers-list-toggle:active {
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .sintercast-logo {
+    top: 10px;
+    padding: 0.5rem 1rem;
+  }
+  
+  .logo-text-small {
+    font-size: 0.8rem;
+  }
+  
+  .logo-subtitle-small {
+    font-size: 0.65rem;
+  }
+  
+  .analytics-title {
+    font-size: 0.8rem;
+  }
+  
+  .analytics-panel {
+    position: relative;
+    margin: 10px;
+    left: auto;
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .status-panel {
+    position: relative;
+    margin: 10px;
+    min-width: auto;
+  }
+  
+  .markers-list-window {
+    width: 95%;
+    height: 80%;
+    max-height: none;
+  }
+  
+  .markers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .location-groups {
+    gap: 1rem;
+    padding: 0.25rem;
+  }
+  
+  .location-group {
+    padding: 0.75rem;
+  }
+  
+  .markers-list-toggle {
+    bottom: 10px;
+    left: 10px;
+    width: 45px;
+    height: 45px;
+    font-size: 1.3rem;
+  }
+}
+
+/* =============================================================================
+   TOUCH SCREEN OPTIMIZATIONS
+   ============================================================================= */
+
+/* Disable text selection on touch devices */
+@media (pointer: coarse) {
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Allow text selection in popups and lists */
+  .machine-popup,
+  .markers-list-content,
+  input,
+  textarea,
+  select {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Remove tap highlight on all interactive elements */
+button,
+.panel-header,
+.location-header,
+.pause-button,
+.markers-list-toggle,
+.close-markers-list,
+select {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Larger markers for touch screens */
+@media (pointer: coarse) {
+  .custom-marker div {
+    transform: scale(1.4) !important;
+    transform-origin: center center;
+  }
+  
+  /* Larger popup close button */
+  .leaflet-popup-close-button {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 24px !important;
+    padding: 4px !important;
+  }
+}
+
+/* Touch-friendly buttons - minimum 44x44px touch targets */
+@media (pointer: coarse) {
+  .pause-button {
+    padding: 1rem 1.5rem !important;
+    font-size: 1.2rem !important;
+    min-height: 55px !important;
+  }
+  
+  /* Make marker items even more touch-friendly */
+  .marker-item {
+    padding: 1.3rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .filter-select {
+    padding: 0.9rem !important;
+    font-size: 1.1rem !important;
+    min-height: 50px !important;
+  }
+  
+  .markers-list-toggle {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 2.2rem !important;
+    bottom: 30px !important;
+    left: 30px !important;
+  }
+  
+  .close-markers-list {
+    min-width: 55px !important;
+    min-height: 55px !important;
+    font-size: 2rem !important;
+  }
+  
+  .panel-header {
+    padding: 1.2rem 0 !important;
+    min-height: 55px !important;
+  }
+  
+  .location-header {
+    padding: 1.3rem !important;
+    min-height: 60px !important;
+  }
+  
+  .toggle-icon {
+    font-size: 1.3rem !important;
+  }
+}
+
+/* Larger panels for big touch screens */
+@media (pointer: coarse) and (min-width: 1200px) {
+  .status-panel {
+    padding: 2.5rem !important;
+    min-width: 350px !important;
+    max-width: 450px !important;
+    font-size: 1.1rem !important;
+  }
+  
+  .analytics-panel {
+    padding: 2rem !important;
+    max-width: 500px !important;
+    font-size: 1.1rem !important;
+  }
+  
+  .markers-list-window {
+    max-width: 700px !important;
+  }
+  
+  /* Larger text in panels */
+  .status-item,
+  .metric-card,
+  .machine-details {
+    font-size: 1.1rem !important;
+  }
+  
+  h3, h4 {
+    font-size: 1.4rem !important;
+  }
+}

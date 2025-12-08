@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0.0",
+  "system": {
+    "os": "Microsoft Windows 10.0.14393",
+    "architecture": "X64",
+    "upTimeTicks": 9761644578,
+    "upTime": {
+      "days": 112,
+      "hours": 23,
+      "minutes": 34,
+      "seconds": 4
+    },
+    "name": "HMC-ECM-RELINNI",
+    "processors": 4,
+    "time": "2025-09-16T12:40:32.5767401+01:00",
+    "utcTime": "2025-09-16T11:40:32.5770252",
+    "timezone": {
+      "id": "W. Europe Standard Time",
+      "displayName": "(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna",
+      "standardName": "W. Europe Standard Time",
+      "daylightName": "W. Europe Standard Time",
+      "baseUtcOffset": {
+        "ticks": 36000000000,
+        "days": 0,
+        "hours": 1,
+        "milliseconds": 0,
+        "minutes": 0,
+        "seconds": 0,
+        "totalDays": 0.0416666666666667,
+        "totalHours": 1,
+        "totalMilliseconds": 3600000,
+        "totalMinutes": 60,
+        "totalSeconds": 3600
+      },
+      "supportsDaylightSavingTime": false
+    }
+  },
+  "disks": [
+    {
+      "mountPoint": "C:\\",
+      "type": "Fixed",
+      "label": "Main",
+      "format": "NTFS",
+      "freeSpace": 201431248896,
+      "totalSize": 247740755968,
+      "usedPercentage": 18
+    }
+  ]
+}
